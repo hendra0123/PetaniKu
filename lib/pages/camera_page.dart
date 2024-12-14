@@ -25,13 +25,6 @@ class _CameraPageState extends State<CameraPage> {
   String? _selectedPlantingMethod;
   String? _selectedSeedType;
 
-  final List<String> _seasons = ['Hujan', 'Kemarau'];
-  final List<String> _plantingMethods = [
-    'Semai/Transplantasi',
-    'Tanam Benih Langsung (TABELA)'
-  ];
-  final List<String> _seedTypes = ['Padi Inpari'];
-
   @override
   void initState() {
     super.initState();
@@ -83,80 +76,6 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _ageController,
-                          decoration: const InputDecoration(
-                            labelText: "Umur Padi (dalam bulan)",
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                        const SizedBox(height: 10),
-                        DropdownButtonFormField<String>(
-                          value: _selectedSeason,
-                          decoration: const InputDecoration(
-                            labelText: "Musim",
-                            border: OutlineInputBorder(),
-                          ),
-                          items: _seasons
-                              .map((season) => DropdownMenuItem<String>(
-                                    value: season,
-                                    child: Text(season),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedSeason = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        DropdownButtonFormField<String>(
-                          value: _selectedPlantingMethod,
-                          decoration: const InputDecoration(
-                            labelText: "Cara Penanaman",
-                            border: OutlineInputBorder(),
-                          ),
-                          items: _plantingMethods
-                              .map((method) => DropdownMenuItem<String>(
-                                    value: method,
-                                    child: Text(method),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedPlantingMethod = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        DropdownButtonFormField<String>(
-                          value: _selectedSeedType,
-                          decoration: const InputDecoration(
-                            labelText: "Jenis Bibit",
-                            border: OutlineInputBorder(),
-                          ),
-                          items: _seedTypes
-                              .map((seed) => DropdownMenuItem<String>(
-                                    value: seed,
-                                    child: Text(seed),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedSeedType = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -175,11 +94,9 @@ class _CameraPageState extends State<CameraPage> {
                           backgroundColor: Colors.green,
                         ),
                         onPressed: () {
-                          if (_validateInputs()) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Data dikirim!")),
-                            );
-                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Data dikirim!")),
+                          );
                         },
                         child: const Text(
                           "Cek Tanaman",

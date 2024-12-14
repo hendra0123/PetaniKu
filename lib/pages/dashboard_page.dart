@@ -7,14 +7,6 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-Future<void> requestNotificationPermission() async {
-  final status = await Permission.notification.status;
-  if (status.isDenied || status.isRestricted) {
-    await Permission.notification.request();
-  }
-  print('Notification Permission: ${status.isGranted}');
-}
-
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
 
@@ -79,7 +71,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    if (await Permission.phone.isGranted) {
+    if (status.isGranted) {
       return;
     } else {
       _showPermissionDialog();
@@ -116,14 +108,6 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       },
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    final hours = twoDigits(duration.inHours);
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return "$hours:$minutes:$seconds";
   }
 
   @override
@@ -395,6 +379,11 @@ class _DashboardPageState extends State<DashboardPage> {
                       selectedDays = tempSelectedDays;
                       selectedHour = tempSelectedHour;
                       selectedMinute = tempSelectedMinute;
+                      if (selectedDays.isNotEmpty) {
+                        isAlarmEnabled = true;
+                      } else {
+                        isAlarmEnabled = false;
+                      }
                     });
                     if (isAlarmEnabled) {
                       await scheduleNotification();
@@ -452,10 +441,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Urutkan selectedDays berdasarkan urutan di daysOrder
+    List<String> sortedDays = List.from(selectedDays);
+    sortedDays.sort((a, b) => days.indexOf(a).compareTo(days.indexOf(b)));
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Dashboard'),
+        title: const Text('Beranda'),
         backgroundColor: Colors.grey.shade300,
         foregroundColor: Colors.black,
       ),
@@ -515,6 +507,40 @@ class _DashboardPageState extends State<DashboardPage> {
               //   ),
               // ),
               const Text(
+                'Pengecekan Lahan',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: const Offset(0, 2), // Efek bayangan
+                    ),
+                  ],
+                ),
+                child: GestureDetector(
+                  onTap: () {
+                    // Tambahkan logika yang ingin dijalankan saat container di-tap
+                    print('Container di-tap');
+                  },
+                  child: Container(
+                      width: 300,
+                      height: 100,
+                      color: Colors.blue,
+                      alignment: Alignment.center,
+                      child: Icon(Icons.add_circle,
+                          size: 50, color: Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
                 'Hasil Panen',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
@@ -529,86 +555,86 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: days.map((day) {
-                        bool isSelected = selectedDays.contains(day);
-                        return Text(
-                          day.substring(0, 3), // Menampilkan singkatan hari
-                          style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.bold : null,
-                            color: isSelected ? Colors.black : Colors.grey,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} WITA',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
+              GestureDetector(
+                onTap:
+                    showAlarmSettingsDialog, // Klik seluruh widget untuk mengatur waktu
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: const Offset(0, 2), // Efek bayangan
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    SwitchListTile(
-                      title: const Text(
-                        'Aktifkan Alarm',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      value: isAlarmEnabled,
-                      onChanged: (value) async {
-                        final notificationPermission =
-                            await Permission.notification.isGranted;
-
-                        if (!notificationPermission) {
-                          _showPermissionDialog();
-                          return;
-                        }
-
-                        if (selectedDays.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'Pilih minimal satu hari untuk mengaktifkan alarm.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
-                        }
-
-                        setState(() {
-                          isAlarmEnabled = value;
-                        });
-
-                        if (isAlarmEnabled) {
-                          await scheduleNotification();
-                        } else {
-                          await cancelNotifications();
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    ],
                   ),
-                  onPressed: showAlarmSettingsDialog,
-                  child: const Text('Atur Jadwal',
-                      style: TextStyle(color: Colors.white)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Bagian Waktu
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}', // Menampilkan waktu terpilih
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            sortedDays.isEmpty
+                                ? 'Tidak ada hari yang dipilih'
+                                : sortedDays.join(', '),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                      ),
+
+                      // Toggle Switch
+                      Switch(
+                        value: isAlarmEnabled,
+                        onChanged: (value) async {
+                          requestNotificationPermission();
+
+                          if (selectedDays.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Pilih minimal satu hari untuk mengaktifkan alarm.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            isAlarmEnabled = value;
+                          });
+                          if (isAlarmEnabled) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Alarm diatur pada ${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} untuk hari ${selectedDays.isEmpty ? 'tidak ada hari' : selectedDays.join(', ')}'),
+                              ),
+                            );
+                          }
+                        },
+                        activeColor: Colors.green, // Warna toggle aktif
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

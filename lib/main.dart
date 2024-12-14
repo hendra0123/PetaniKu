@@ -77,16 +77,19 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            activeIcon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined),
+            label: 'Beranda',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt),
-            label: 'Camera',
+            activeIcon: Icon(Icons.camera_enhance),
+            icon: Icon(Icons.camera_enhance_outlined),
+            label: 'Kamera',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'History',
+            activeIcon: Icon(Icons.history_toggle_off),
+            icon: Icon(Icons.history_toggle_off_outlined),
+            label: 'Riwayat',
           ),
         ],
         currentIndex: _selectedIndex,

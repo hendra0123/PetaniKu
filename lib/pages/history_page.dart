@@ -29,7 +29,7 @@ class PhotoHistoryPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text("History"),
+        title: const Text("Riwayat"),
         backgroundColor: Colors.grey.shade300,
         foregroundColor: Colors.black,
       ),
