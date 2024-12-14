@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../resources/app_resources.dart';
 
 Future<void> requestNotificationPermission() async {
   final status = await Permission.notification.status;
@@ -25,7 +26,13 @@ class _DashboardPageState extends State<DashboardPage> {
   List<String> selectedDays = [];
   int selectedHour = 9;
   int selectedMinute = 0;
-  bool isAlarmEnabled = true;
+  bool isAlarmEnabled = false;
+  DateTime? nextCheckTime; // Waktu pengecekan berikutnya
+  late Timer _timer;
+  Duration remainingTime = Duration.zero;
+  List<DateTime> targetDates = [];
+  int indexTargetDates = 0;
+  var message = 'Please try to functions below.';
 
   final List<String> days = [
     'Senin',
@@ -41,17 +48,99 @@ class _DashboardPageState extends State<DashboardPage> {
       FlutterLocalNotificationsPlugin();
 
   @override
+  void dispose() {
+    _timer.cancel(); // Menghentikan timer ketika halaman ditutup
+    super.dispose();
+  }
+
+  void _startCountdown() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (nextCheckTime != null) {
+        setState(() {
+          remainingTime = nextCheckTime!.difference(DateTime.now());
+          if (remainingTime.isNegative) {
+            remainingTime = Duration.zero;
+            _timer.cancel();
+          }
+        });
+      }
+    });
+  }
+
+  Future<void> requestNotificationPermission() async {
+    final status = await Permission.notification.status;
+    if (status.isDenied || status.isRestricted) {
+      await Permission.notification.request();
+    }
+    print('Notification Permission: ${status.isGranted}');
+
+    if (status.isPermanentlyDenied) {
+      _showPermissionDialog();
+      return;
+    }
+
+    if (await Permission.phone.isGranted) {
+      return;
+    } else {
+      _showPermissionDialog();
+    }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            "Izin Diperlukan",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+              "Aplikasi membutuhkan izin untuk mengakses notifikasi handphone Anda agar dapat berfungsi dengan baik. Buka Pengaturan > Izin > Notifikasi > Izinkan Notifikasi"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("Kembali"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await openAppSettings();
+              },
+              child: const Text("Buka Pengaturan"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$hours:$minutes:$seconds";
+  }
+
+  @override
   void initState() {
     super.initState();
-    requestNotificationPermission();
     initializeNotifications();
+    if (targetDates.isNotEmpty) {
+      nextCheckTime = targetDates[indexTargetDates];
+    }
+    _startCountdown();
   }
 
   // Inisialisasi notifikasi dan timezone
   void initializeNotifications() async {
     // Inisialisasi plugin notifikasi
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/notification');
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
@@ -61,9 +150,18 @@ class _DashboardPageState extends State<DashboardPage> {
     tz.setLocalLocation(tz.getLocation('Asia/Makassar')); // Atur ke zona WITA
   }
 
-  // Fungsi untuk menjadwalkan notifikasi
-  Future<void> scheduleNotification(
-      int hour, int minute, List<String> days) async {
+  // Fungsi untuk menjadwalkan notifikasi (dimodifikasi)
+  Future<void> scheduleNotification() async {
+    if (selectedDays.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pilih minimal satu hari untuk alarm'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     const AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
       'alarm_channel_id',
@@ -77,29 +175,59 @@ class _DashboardPageState extends State<DashboardPage> {
     const NotificationDetails notificationDetails =
         NotificationDetails(android: androidNotificationDetails);
 
-    for (String day in days) {
+    targetDates = [];
+    indexTargetDates = 0;
+
+    for (String day in selectedDays) {
       int weekday = days.indexOf(day) + 1; // Senin = 1, Minggu = 7
       final now = DateTime.now();
-      final scheduledDate = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        hour,
-        minute,
-      );
 
-      // Konversi DateTime ke TZDateTime
-      final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(
-        scheduledDate,
-        tz.local,
-      );
+      // Hitung tanggal target
+      DateTime targetDate;
+
+      if (weekday == now.weekday) {
+        // Hari yang sama dengan hari ini
+        if (selectedHour > now.hour ||
+            (selectedHour == now.hour && selectedMinute > now.minute)) {
+          // Jika waktu belum lewat
+          targetDate = DateTime(
+              now.year, now.month, now.day, selectedHour, selectedMinute);
+        } else {
+          // Jika waktu sudah lewat, pindahkan ke minggu depan
+          targetDate = now.add(Duration(days: 7));
+          targetDate = DateTime(
+              targetDate.year,
+              targetDate.month,
+              targetDate.day - targetDate.weekday + weekday,
+              selectedHour,
+              selectedMinute);
+        }
+      } else if (weekday > now.weekday) {
+        // Hari di minggu ini
+        int daysUntil = weekday - now.weekday;
+        targetDate = now.add(Duration(days: daysUntil));
+        targetDate = DateTime(targetDate.year, targetDate.month, targetDate.day,
+            selectedHour, selectedMinute);
+      } else {
+        // Hari di minggu depan
+        int daysUntilNextWeek = 7 - (now.weekday - weekday);
+        targetDate = now.add(Duration(days: daysUntilNextWeek));
+        targetDate = DateTime(targetDate.year, targetDate.month, targetDate.day,
+            selectedHour, selectedMinute);
+      }
+
+      // Konversi ke TZDateTime
+      final tz.TZDateTime tzTargetDate =
+          tz.TZDateTime.from(targetDate, tz.local);
+
+      targetDates.add(tzTargetDate);
 
       // Jadwalkan notifikasi
       await flutterLocalNotificationsPlugin.zonedSchedule(
         weekday,
         'Alarm Pengecekan Tanaman',
         'Waktunya memeriksa tanaman pada hari $day!',
-        tzScheduledDate,
+        tzTargetDate,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
@@ -107,6 +235,35 @@ class _DashboardPageState extends State<DashboardPage> {
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       );
     }
+  }
+
+  Future<void> testNotification() async {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
+      'test_channel_id',
+      'Test Notifications',
+      channelDescription: 'Notifikasi untuk pengujian',
+      importance: Importance.high,
+      priority: Priority.high,
+      channelShowBadge: true,
+    );
+
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidNotificationDetails);
+
+    await flutterLocalNotificationsPlugin.show(
+      0, // ID notifikasi
+      'Test Notification',
+      'Notifikasi ini adalah tes apakah berjalan dengan baik!',
+      notificationDetails,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Notifikasi berhasil dikirim!'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   // Fungsi untuk membatalkan semua notifikasi
@@ -240,8 +397,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       selectedMinute = tempSelectedMinute;
                     });
                     if (isAlarmEnabled) {
-                      await scheduleNotification(
-                          selectedHour, selectedMinute, selectedDays);
+                      await scheduleNotification();
                     }
                     Navigator.pop(context);
                   },
@@ -250,6 +406,45 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  void _handleCheckReminder() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pengecekan Tanaman'),
+          content:
+              const Text('Apakah Anda sudah melakukan pengecekan tanaman?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  indexTargetDates++;
+                  nextCheckTime = DateTime.now()
+                      .add(Duration(days: targetDates[indexTargetDates].day));
+                  remainingTime = nextCheckTime!.difference(DateTime.now());
+                  _startCountdown();
+                });
+              },
+              child: const Text('Sudah'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  nextCheckTime = DateTime.now().add(Duration(minutes: 5));
+                  remainingTime = nextCheckTime!.difference(DateTime.now());
+                  _startCountdown();
+                });
+              },
+              child: const Text('Belum'),
+            ),
+          ],
         );
       },
     );
@@ -264,81 +459,160 @@ class _DashboardPageState extends State<DashboardPage> {
         backgroundColor: Colors.grey.shade300,
         foregroundColor: Colors.black,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Jadwal Pengecekan Tanaman',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(10),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Container(
+              //   width: double.infinity,
+              //   padding: EdgeInsets.all(16.0),
+              //   margin: EdgeInsets.all(8.0),
+              //   decoration: BoxDecoration(
+              //     color: Colors.lightBlue.shade100,
+              //     borderRadius: BorderRadius.circular(12.0),
+              //     boxShadow: [
+              //       BoxShadow(
+              //         color: Colors.black12,
+              //         blurRadius: 8.0,
+              //         offset: Offset(0, 4),
+              //       ),
+              //     ],
+              //   ),
+              //   child: Column(
+              //     crossAxisAlignment: CrossAxisAlignment.start,
+              //     children: [
+              //       Text(
+              //         'Reminder Pengecekan Tanaman',
+              //         style: TextStyle(
+              //           fontSize: 20.0,
+              //           fontWeight: FontWeight.bold,
+              //           color: Colors.blueAccent,
+              //         ),
+              //       ),
+              //       SizedBox(height: 8.0),
+              //       Text(
+              //         remainingTime > Duration.zero
+              //             ? 'Sisa waktu: ${_formatDuration(remainingTime)}'
+              //             : 'Waktunya melakukan pengecekan ulang!',
+              //         style: TextStyle(
+              //           fontSize: 16.0,
+              //           color: Colors.black87,
+              //         ),
+              //       ),
+              //       if (remainingTime == Duration.zero)
+              //         Row(
+              //           mainAxisAlignment: MainAxisAlignment.end,
+              //           children: [
+              //             ElevatedButton(
+              //               onPressed: _handleCheckReminder,
+              //               child: const Text('Cek Tanaman'),
+              //             ),
+              //           ],
+              //         ),
+              //     ],
+              //   ),
+              // ),
+              const Text(
+                'Hasil Panen',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: days.map((day) {
-                      bool isSelected = selectedDays.contains(day);
-                      return Text(
-                        day.substring(0, 3), // Menampilkan singkatan hari
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : null,
-                          color: isSelected ? Colors.black : Colors.grey,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} WITA',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SwitchListTile(
-                    title: const Text(
-                      'Aktifkan Alarm',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    value: isAlarmEnabled,
-                    onChanged: (value) async {
-                      setState(() {
-                        isAlarmEnabled = value;
-                      });
-                      if (isAlarmEnabled) {
-                        await scheduleNotification(
-                            selectedHour, selectedMinute, selectedDays);
-                      } else {
-                        await cancelNotifications();
-                      }
-                    },
-                  ),
-                ],
+              LineChartSample2(),
+              const Text(
+                'Penghematan Pupuk',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+              LineChartSample2(),
+              const Text(
+                'Jadwal Pengecekan Tanaman',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                onPressed: showAlarmSettingsDialog,
-                child: const Text('Atur Jadwal',
-                    style: TextStyle(color: Colors.white)),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: days.map((day) {
+                        bool isSelected = selectedDays.contains(day);
+                        return Text(
+                          day.substring(0, 3), // Menampilkan singkatan hari
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : null,
+                            color: isSelected ? Colors.black : Colors.grey,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} WITA',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SwitchListTile(
+                      title: const Text(
+                        'Aktifkan Alarm',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      value: isAlarmEnabled,
+                      onChanged: (value) async {
+                        final notificationPermission =
+                            await Permission.notification.isGranted;
+
+                        if (!notificationPermission) {
+                          _showPermissionDialog();
+                          return;
+                        }
+
+                        if (selectedDays.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Pilih minimal satu hari untuk mengaktifkan alarm.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        setState(() {
+                          isAlarmEnabled = value;
+                        });
+
+                        if (isAlarmEnabled) {
+                          await scheduleNotification();
+                        } else {
+                          await cancelNotifications();
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            LineChartSample2(),
-          ],
+              const SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                  onPressed: showAlarmSettingsDialog,
+                  child: const Text('Atur Jadwal',
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -353,10 +627,7 @@ class LineChartSample2 extends StatefulWidget {
 }
 
 class _LineChartSample2State extends State<LineChartSample2> {
-  List<Color> gradientColors = [
-    AppColors.contentColorCyan,
-    AppColors.contentColorBlue,
-  ];
+  List<Color> gradientColors = [Color(0xFF50E4FF), Color(0xFF2196F3)];
 
   bool showAvg = false;
 
@@ -459,13 +730,13 @@ class _LineChartSample2State extends State<LineChartSample2> {
         verticalInterval: 1,
         getDrawingHorizontalLine: (value) {
           return const FlLine(
-            color: AppColors.mainGridLineColor,
+            color: Colors.white10,
             strokeWidth: 1,
           );
         },
         getDrawingVerticalLine: (value) {
           return const FlLine(
-            color: AppColors.mainGridLineColor,
+            color: Colors.white10,
             strokeWidth: 1,
           );
         },

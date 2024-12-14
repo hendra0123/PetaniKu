@@ -38,6 +38,7 @@ class _CameraPageState extends State<CameraPage> {
     _cameraController = CameraController(
       widget.camera,
       ResolutionPreset.high,
+      enableAudio: false,
     );
     _initializeControllerFuture = _cameraController.initialize();
   }
@@ -54,10 +55,6 @@ class _CameraPageState extends State<CameraPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text(
           "Kamera",
         ),
