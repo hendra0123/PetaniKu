@@ -512,33 +512,28 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 10),
               Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: const Offset(0, 2), // Efek bayangan
-                    ),
-                  ],
-                ),
-                child: GestureDetector(
-                  onTap: () {
-                    // Tambahkan logika yang ingin dijalankan saat container di-tap
-                    print('Container di-tap');
-                  },
-                  child: Container(
-                      width: 300,
-                      height: 100,
-                      color: Colors.blue,
-                      alignment: Alignment.center,
-                      child: Icon(Icons.add_circle,
-                          size: 50, color: Colors.white)),
-                ),
-              ),
+                  width: 300,
+                  height: 100,
+                  margin: const EdgeInsets.all(8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: const Offset(0, 2), // Efek bayangan
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.add_circle,
+                    size: 50,
+                  )),
+
               const SizedBox(height: 10),
               const Text(
                 'Hasil Panen',
