@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: "/dashboard",
+      initialRoute: "/signup",
       routes: {
         "/dashboard": (context) => const MainNavigationPage(),
         "/signup": (context) => SignUpPage(),
