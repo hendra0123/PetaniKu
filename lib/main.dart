@@ -1,9 +1,11 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:petaniku/pages/camera_page.dart';
 import 'package:petaniku/pages/dashboard_page.dart';
 import 'package:petaniku/pages/history_page.dart';
 import 'package:petaniku/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:petaniku/pages/map_page.dart';
 import 'package:petaniku/pages/tes.dart';
 import 'pages/signup_page.dart';
 import 'package:camera/camera.dart';
@@ -13,6 +15,7 @@ late List<CameraDescription> cameras;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
 
   // Initialize cameras
   cameras = await availableCameras();
@@ -32,7 +35,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: "/signup",
+      initialRoute: "/map",
       routes: {
         "/dashboard": (context) => const MainNavigationPage(),
         "/signup": (context) => SignUpPage(),
@@ -41,6 +44,7 @@ class MyApp extends StatelessWidget {
               camera: cameras.first,
             ),
         "/history": (context) => PhotoHistoryPage(),
+        "/map": (context) => const MapPage(),
         "/tes": (context) => tes()
       },
     );
