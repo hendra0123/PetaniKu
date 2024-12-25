@@ -1,8 +1,9 @@
 part of 'shared.dart';
 
 class UserConstant {
-  static int index = 0;
-  static List<LatLng> fieldCoordinates = const [
+  // TODO: REMOVE ALL AFTER TESTING
+  // static RiceField? riceField = null;
+  static RiceField? riceField = RiceField(area: 2, createdTime: DateTime.now(), coordinates: const [
     LatLng(-5.149326, 119.394834),
     LatLng(-5.149333, 119.395184),
     LatLng(-5.149041, 119.395200),
@@ -13,37 +14,37 @@ class UserConstant {
     LatLng(-5.149687, 119.394879),
     LatLng(-5.149572, 119.394823),
     LatLng(-5.149326, 119.394834),
+  ]);
+
+  static void setRiceField(RiceField? newRiceField) {
+    riceField = newRiceField;
+  }
+
+  static int index = 0;
+
+  // static List<LatLng> tester = const [
+  //   LatLng(-5.149326, 119.394834),
+  //   LatLng(-5.149333, 119.395184),
+  //   LatLng(-5.149041, 119.395200),
+  //   LatLng(-5.149052, 119.395396),
+  //   LatLng(-5.149565, 119.395370),
+  //   LatLng(-5.149569, 119.395431),
+  //   LatLng(-5.149711, 119.395425),
+  //   LatLng(-5.149687, 119.394879),
+  //   LatLng(-5.149572, 119.394823),
+  //   LatLng(-5.149326, 119.394834),
+  // ];
+  static List<LatLng> tester = const [
+    LatLng(-5.14960, 119.39500),
+    LatLng(-5.14960, 119.39600),
+    LatLng(-5.14900, 119.39600),
+    LatLng(-5.14900, 119.39500),
+    LatLng(-5.14960, 119.39500),
   ];
 
-  // TODO: REMOVE AFTER TESTING
-  static List<LatLng> fieldCoordinates2 = const [
-    LatLng(-5.149326, 119.394834),
-    LatLng(-5.149325999985689, 119.39496944487378),
-    LatLng(-5.1493979457141625, 119.39496944487378),
-    LatLng(-5.149397945688722, 119.39478885168833),
-    LatLng(-5.149359790703216, 119.39482716128586),
-    LatLng(-5.149436100667359, 119.39490378049011),
-    LatLng(-5.149391134587063, 119.39490378049011),
-    LatLng(-5.1493911345727525, 119.39503922537774),
-    LatLng(-5.149463080301225, 119.39503922537774),
-    LatLng(-5.149463080275783, 119.3948586321738),
-    LatLng(-5.149424925290278, 119.39489694177524),
-    LatLng(-5.149501235254419, 119.39497356098732),
-    LatLng(-5.149456269174124, 119.39497356098732),
-    LatLng(-5.1494562691598125, 119.39510900588884),
-    LatLng(-5.149528214888286, 119.39510900588884),
-    LatLng(-5.149528214862844, 119.39492841266639),
-    LatLng(-5.149490059877338, 119.39496672227175),
-    LatLng(-5.149566369841479, 119.3950433414917),
-    LatLng(-5.1495214037611845, 119.3950433414917),
-    LatLng(-5.149521403746872, 119.3951787864071),
-  ];
-
-  // TODO: REMOVE AFTER TESTING
-  static LatLng coordinate() {
-    if (index == fieldCoordinates2.length) return fieldCoordinates2.last;
-
-    LatLng coord = fieldCoordinates2[index];
+  static LatLng getCoord() {
+    if (index == tester.length) return tester[index - 1];
+    LatLng coord = tester[index];
     index++;
     return coord;
   }
