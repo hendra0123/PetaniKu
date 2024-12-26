@@ -1,11 +1,4 @@
-import 'dart:async';
-
-import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:petaniku/models/models.dart';
-import 'package:petaniku/shared/shared.dart';
+part of 'pages.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -19,7 +12,6 @@ class _MapPageState extends State<MapPage> {
       StreamController<double?>.broadcast();
 
   AlignOnUpdate _followOnLocationUpdate = AlignOnUpdate.always;
-  RiceField? currentRiceField = UserConstant.riceField;
   double initialZoom = AppConstant.defaultInitialZoom;
   List<LatLng> previousPolylinePoints = [];
   List<LatLng> currentPolylinePoints = [];
@@ -28,6 +20,8 @@ class _MapPageState extends State<MapPage> {
   bool showPolygon = true;
   bool isMapping = false;
 
+  late UserViewModel userViewModel;
+  late RiceField? currentRiceField;
   late Future<LatLng> initialPosition;
 
   void fieldMapping() async {
@@ -45,10 +39,7 @@ class _MapPageState extends State<MapPage> {
 
     while (isMapping) {
       try {
-        // TODO: REPAIR AFTER TESTING
-        await GeoUtil.findCurrentPosition();
-        // LatLng coordinate = await GeoUtil.findCurrentPosition();
-        LatLng coordinate = UserConstant.getCoord();
+        LatLng coordinate = await GeoUtil.findCurrentPosition();
 
         if (previousPolylinePoints.isEmpty && currentPolylinePoints.isEmpty) {
           previousPolylinePoints.add(coordinate);
@@ -74,47 +65,24 @@ class _MapPageState extends State<MapPage> {
       }
     }
 
-    setState(() {
-      if (!isCancelled) {
-        if (previousPolylinePoints.isNotEmpty) {
-          previousPolylinePoints.add(previousPolylinePoints.first);
-          previousPolylinePoints = GeoUtil.simplifyPolygon(previousPolylinePoints);
-        }
-        double riceFieldArea;
-        if (GeoUtil.isValidPolygon(previousPolylinePoints)) {
-          riceFieldArea = GeoUtil.findPolygonArea(previousPolylinePoints);
-        } else {
-          riceFieldArea = 0;
-          polygonErrorMsg = "Pemetaan sawah tidak benar";
-        }
-        currentRiceField = RiceField(
-          area: riceFieldArea,
-          coordinates: previousPolylinePoints,
-          createdTime: DateTime.now(),
-        );
-      }
-
-      showPolygon = true;
-      currentPolylinePoints = [];
-      previousPolylinePoints = [];
-      UserConstant.index = 0;
-    });
+    if (!isCancelled && previousPolylinePoints.isNotEmpty) {
+      finalizeMapping();
+    }
+    resetMappingState();
   }
 
   void finalizeMapping() {
     setState(() {
-      if (previousPolylinePoints.isNotEmpty) {
-        previousPolylinePoints.add(previousPolylinePoints.first);
-        previousPolylinePoints = GeoUtil.simplifyPolygon(previousPolylinePoints);
-      }
-
+      previousPolylinePoints.add(previousPolylinePoints.first);
+      previousPolylinePoints = GeoUtil.simplifyPolygon(previousPolylinePoints);
       if (GeoUtil.isValidPolygon(previousPolylinePoints)) {
         currentRiceField = RiceField(
           area: GeoUtil.findPolygonArea(previousPolylinePoints),
-          coordinates: previousPolylinePoints,
+          coordinates: List.from(previousPolylinePoints),
           createdTime: DateTime.now(),
         );
       } else {
+        currentRiceField = RiceField(coordinates: List.from(previousPolylinePoints));
         polygonErrorMsg = "Pemetaan sawah tidak benar";
       }
     });
@@ -125,13 +93,12 @@ class _MapPageState extends State<MapPage> {
       showPolygon = true;
       currentPolylinePoints.clear();
       previousPolylinePoints.clear();
-      UserConstant.index = 0;
     });
   }
 
   void cancelFieldMapping() {
     setState(() {
-      currentRiceField = UserConstant.riceField;
+      currentRiceField = userViewModel.riceField;
       polygonErrorMsg = "";
       isCancelled = true;
       isMapping = false;
@@ -139,14 +106,20 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  void saveRiceField() {
-    // TODO: CONNECT TO SERVER
-    setState(() => UserConstant.setRiceField(currentRiceField));
+  void saveRiceField() async {
+    try {
+      String message = await userViewModel.updateRiceField(currentRiceField!);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
   }
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    userViewModel = Provider.of<UserViewModel>(context);
+    currentRiceField = userViewModel.riceField;
     initialPosition = currentRiceField != null
         ? Future.value(GeoUtil.findPolygonCenter(currentRiceField!.coordinates!))
         : GeoUtil.findCurrentPosition();
@@ -161,47 +134,42 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<LatLng>(
-          future: initialPosition,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              polygonErrorMsg = snapshot.error.toString();
-            }
-
-            return Stack(children: [
-              buildMap(snapshot.data),
-              buildBottomAlignedInfo(),
-              buildFloatingButton(),
-            ]);
-          }),
+      body: Stack(children: [
+        buildMap(),
+        buildBottomAlignedInfo(),
+        buildFloatingButton(),
+      ]),
     );
   }
 
-  Widget buildMap(LatLng? position) {
-    return FlutterMap(
-      options: MapOptions(
-        initialCenter: position ?? AppConstant.defaultInitialPosition,
-        initialZoom: initialZoom,
-        maxZoom: initialZoom + 3,
-        minZoom: initialZoom - 3,
-        onPositionChanged: (MapCamera position, bool hasGesture) {
-          if (hasGesture && _followOnLocationUpdate != AlignOnUpdate.never) {
-            setState(() => _followOnLocationUpdate = AlignOnUpdate.never);
+  Widget buildMap() {
+    return FutureBuilder<LatLng>(
+        future: initialPosition,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
           }
-        },
-      ),
-      children: [
-        AppConstant.openStreeMapTileLayer,
-        if (isMapping) ...buildPolylineLayers(),
-        if (showPolygon && currentRiceField != null) buildPolygonLayer(),
-        // TODO: UNCOMMENT AFTER TESTING
-        // if (isMapping || currentRiceField == null) buildCurrentLocationLayer(),
-      ],
-    );
+
+          return FlutterMap(
+            options: MapOptions(
+              initialCenter: snapshot.data ?? AppConstant.defaultInitialPosition,
+              initialZoom: initialZoom,
+              maxZoom: initialZoom + 3,
+              minZoom: initialZoom - 3,
+              onPositionChanged: (MapCamera position, bool hasGesture) {
+                if (hasGesture && _followOnLocationUpdate != AlignOnUpdate.never) {
+                  setState(() => _followOnLocationUpdate = AlignOnUpdate.never);
+                }
+              },
+            ),
+            children: [
+              AppConstant.openStreeMapTileLayer,
+              if (isMapping) ...buildPolylineLayers(),
+              if (showPolygon && currentRiceField != null) buildPolygonLayer(),
+              if (isMapping || currentRiceField == null) buildCurrentLocationLayer(),
+            ],
+          );
+        });
   }
 
   List<Widget> buildPolylineLayers() {
@@ -228,7 +196,7 @@ class _MapPageState extends State<MapPage> {
     return PolygonLayer(polygons: [
       Polygon(
         borderStrokeWidth: 5,
-        points: currentRiceField!.coordinates!,
+        points: currentRiceField!.coordinates ?? [],
         borderColor: const Color(0xFF00AAFF),
         color: const Color(0xFFFF5252).withOpacity(0.2),
       )
@@ -274,13 +242,13 @@ class _MapPageState extends State<MapPage> {
               : currentRiceField != null
                   ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       buildText(
-                        text: "${currentRiceField!.area!} Hektar",
+                        text: "${currentRiceField?.area} Hektar",
                         fontWeight: FontWeight.bold,
                         fontSize: 40,
                       ),
                       buildText(
                         text:
-                            "Tanggal Pemetaan: ${currentRiceField!.createdTime!.day}/${currentRiceField!.createdTime!.month}/${currentRiceField!.createdTime!.year}",
+                            "Tanggal Pemetaan: ${currentRiceField?.createdTime?.day}/${currentRiceField?.createdTime?.month}/${currentRiceField?.createdTime?.year}",
                       ),
                     ])
                   : buildText(text: "Anda belum melakukan pemetaan sawah"),
@@ -289,7 +257,7 @@ class _MapPageState extends State<MapPage> {
 
   Widget buildMainButtons() {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      if (currentRiceField != UserConstant.riceField) ...[
+      if (currentRiceField != userViewModel.riceField) ...[
         buildExpandedButton(
           onPressed: cancelFieldMapping,
           buttonColor: Colors.grey,
@@ -299,7 +267,7 @@ class _MapPageState extends State<MapPage> {
       ],
       buildExpandedButton(
         onPressed:
-            !isMapping && polygonErrorMsg.isEmpty && currentRiceField != UserConstant.riceField
+            !isMapping && polygonErrorMsg.isEmpty && currentRiceField != userViewModel.riceField
                 ? saveRiceField
                 : fieldMapping,
         buttonColor: Color(polygonErrorMsg.isEmpty ? 0xFF729762 : 0xFFEBA000),
@@ -309,7 +277,7 @@ class _MapPageState extends State<MapPage> {
                 : "Selesai"
             : polygonErrorMsg.isNotEmpty
                 ? "Ulangi"
-                : currentRiceField != UserConstant.riceField
+                : currentRiceField != userViewModel.riceField
                     ? "Konfirmasi"
                     : "Mulai Pemetaan Sawah",
       ),

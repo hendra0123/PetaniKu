@@ -20,8 +20,9 @@ class Statistic extends Equatable {
         ureaRequired: (json['urea_required'] as num?)?.toDouble(),
         fertilizerRequired: (json['fertilizer_required'] as num?)?.toDouble(),
         yields: json['yields'] as int?,
-        createdTime:
-            json['created_time'] == null ? null : DateTime.parse(json['created_time'] as String),
+        createdTime: json['created_time'] == null
+            ? null
+            : DateTime.parse(json['created_time'] as String),
       );
 
   Map<String, dynamic> toJson() => {

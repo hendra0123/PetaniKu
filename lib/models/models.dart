@@ -7,3 +7,5 @@ part 'summary.dart';
 part 'statistic.dart';
 part 'image.dart';
 part 'coordinate.dart';
+part 'history.dart';
+part 'prediction.dart';

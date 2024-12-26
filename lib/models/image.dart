@@ -1,41 +1,39 @@
 part of 'models.dart';
 
 class Image extends Equatable {
-  final double? latitude;
-  final double? longitude;
+  final LatLng? coordinate;
   final int? level;
   final String? url;
 
-  const Image({this.latitude, this.longitude, this.level, this.url});
+  const Image({this.coordinate, this.level, this.url});
 
   factory Image.fromJson(Map<String, dynamic> json) => Image(
-        latitude: (json['latitude'] as num?)?.toDouble(),
-        longitude: (json['longitude'] as num?)?.toDouble(),
+        coordinate: LatLng(
+          (json['latitude'] as num).toDouble(),
+          (json['longitude'] as num).toDouble(),
+        ),
         level: json['level'] as int?,
         url: json['url'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
-        'latitude': latitude,
-        'longitude': longitude,
+        'coordinate': coordinate,
         'level': level,
         'url': url,
       };
 
   Image copyWith({
-    double? latitude,
-    double? longitude,
+    LatLng? coordinate,
     int? level,
     String? url,
   }) {
     return Image(
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
+      coordinate: coordinate ?? this.coordinate,
       level: level ?? this.level,
       url: url ?? this.url,
     );
   }
 
   @override
-  List<Object?> get props => [latitude, longitude, level, url];
+  List<Object?> get props => [coordinate, level, url];
 }

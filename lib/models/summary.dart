@@ -24,8 +24,9 @@ class Summary extends Equatable {
         images: (json['images'] as List<dynamic>?)
             ?.map((e) => Image.fromJson(e as Map<String, dynamic>))
             .toList(),
-        createdTime:
-            json['created_time'] == null ? null : DateTime.parse(json['created_time'] as String),
+        createdTime: json['created_time'] == null
+            ? null
+            : DateTime.parse(json['created_time'] as String),
         statistics: (json['statistics'] as List<dynamic>?)
             ?.map((e) => Statistic.fromJson(e as Map<String, dynamic>))
             .toList(),

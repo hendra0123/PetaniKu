@@ -5,8 +5,10 @@ import 'package:petaniku/pages/history_page.dart';
 import 'package:petaniku/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:petaniku/pages/map_page.dart';
+import 'package:petaniku/pages/pages.dart';
 import 'package:petaniku/pages/tes.dart';
+import 'package:petaniku/view_model/view_model.dart';
+import 'package:provider/provider.dart';
 import 'pages/signup_page.dart';
 import 'package:camera/camera.dart';
 
@@ -19,7 +21,12 @@ Future<void> main() async {
 
   // Initialize cameras
   cameras = await availableCameras();
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => UserViewModel(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

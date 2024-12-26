@@ -96,7 +96,8 @@ class GeoUtil {
   }
 
   static double findPolygonArea(List<LatLng> points) {
-    double area = mp.SphericalUtil.computeArea(_convertPoints(points)) / 10000; // m2 to hectare
+    double area = mp.SphericalUtil.computeArea(_convertPoints(points)) /
+        10000; // m2 to hectare
     return double.parse(area.toStringAsFixed(2));
   }
 

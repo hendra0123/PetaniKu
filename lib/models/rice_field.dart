@@ -8,8 +8,9 @@ class RiceField extends Equatable {
   const RiceField({this.createdTime, this.coordinates, this.area});
 
   factory RiceField.fromJson(Map<String, dynamic> json) => RiceField(
-        createdTime:
-            json['created_time'] == null ? null : DateTime.parse(json['created_time'] as String),
+        createdTime: json['created_time'] == null
+            ? null
+            : DateTime.parse(json['created_time'] as String),
         coordinates: (json['coordinates'] as List<dynamic>?)
             ?.map((e) => LatLng(
                   (e['latitude'] as num).toDouble(),
