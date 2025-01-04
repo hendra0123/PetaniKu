@@ -17,14 +17,6 @@ class _CameraPageState extends State<CameraPage> {
   late Future<void> _initializeControllerFuture;
   XFile? _capturedImage;
 
-  // Controllers for form fields
-  final TextEditingController _ageController = TextEditingController();
-
-  // Dropdown values
-  String? _selectedSeason;
-  String? _selectedPlantingMethod;
-  String? _selectedSeedType;
-
   @override
   void initState() {
     super.initState();
@@ -34,13 +26,43 @@ class _CameraPageState extends State<CameraPage> {
       enableAudio: false,
     );
     _initializeControllerFuture = _cameraController.initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showInfoDialog());
   }
 
   @override
   void dispose() {
     _cameraController.dispose();
-    _ageController.dispose();
     super.dispose();
+  }
+
+  void _showInfoDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Mencegah pop-up ditutup dengan klik di luar
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            "Informasi",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            "Silahkan melakukan foto pada tanaman Anda untuk analisis lebih lanjut.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                "OK",
+                style:
+                    TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -54,64 +76,90 @@ class _CameraPageState extends State<CameraPage> {
         backgroundColor: Colors.grey.shade300,
         foregroundColor: Colors.black,
       ),
-      body: _capturedImage == null
-          ? FutureBuilder<void>(
-              future: _initializeControllerFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  return CameraPreview(_cameraController);
-                } else {
-                  return const Center(child: CircularProgressIndicator());
-                }
-              },
-            )
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    child: Image.file(
-                      File(_capturedImage!.path),
-                      fit: BoxFit.cover,
+      body: Container(
+        child: _capturedImage == null
+            ? FutureBuilder<void>(
+                future: _initializeControllerFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    return CameraPreview(_cameraController);
+                  } else {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                },
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    Container(
+                      margin: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.file(
+                        File(_capturedImage!.path),
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey,
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () =>
+                              setState(() => _capturedImage = null),
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          label: const Text("Ulang",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
                         ),
-                        onPressed: () => setState(() => _capturedImage = null),
-                        child: const Text("Ulang",
-                            style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Data dikirim!")),
+                            );
+                          },
+                          icon: const Icon(Icons.check_circle,
+                              color: Colors.white),
+                          label: const Text("Cek Tanaman",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
                         ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Data dikirim!")),
-                          );
-                        },
-                        child: const Text(
-                          "Cek Tanaman",
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 20,
-                  )
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-            ),
+      ),
       floatingActionButton: _capturedImage == null
           ? FloatingActionButton.extended(
               backgroundColor: Colors.green,
@@ -132,18 +180,5 @@ class _CameraPageState extends State<CameraPage> {
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
-  }
-
-  bool _validateInputs() {
-    if (_ageController.text.isEmpty ||
-        _selectedSeason == null ||
-        _selectedPlantingMethod == null ||
-        _selectedSeedType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Harap isi semua field!")),
-      );
-      return false;
-    }
-    return true;
   }
 }
