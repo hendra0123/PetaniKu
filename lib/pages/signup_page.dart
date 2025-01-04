@@ -19,15 +19,10 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   var message = 'Please try to functions below.';
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController _nameController = TextEditingController();
-
   final TextEditingController _phoneController = TextEditingController();
-
   bool? isChecked = false;
-
   String? simNumber;
-
   String url = "https://dmlj3k21-5000.asse.devtunnels.ms/user";
 
   @override
@@ -41,12 +36,10 @@ class _SignUpPageState extends State<SignUpPage> {
     if (status.isDenied || status.isRestricted) {
       await Permission.phone.request();
     }
-
     if (status.isPermanentlyDenied) {
       _showPermissionDialog();
       return;
     }
-
     if (await Permission.phone.isGranted) {
       try {
         String result = await GetPhoneNumber().getPhoneNumber();
@@ -61,38 +54,6 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  void _showPermissionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            "Izin Diperlukan",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: const Text(
-              "Aplikasi membutuhkan izin untuk mengakses nomor telepon Anda agar dapat berfungsi dengan baik. "),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text("Kembali"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await openAppSettings();
-              },
-              child: const Text("Buka Pengaturan"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> fetchLogin() async {
     dynamic response = await http.post(Uri.parse(url),
         headers: <String, String>{
@@ -104,7 +65,7 @@ class _SignUpPageState extends State<SignUpPage> {
       final json = jsonDecode(response.body);
       Const.token = json['token'];
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Akun berhasil dibuat')),
+        SnackBar(content: Text(jsonDecode(response.body)['pesan'])),
       );
 
       Navigator.of(context)
@@ -148,6 +109,38 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            "Izin Diperlukan",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+              "Aplikasi membutuhkan izin untuk mengakses nomor telepon Anda agar dapat berfungsi dengan baik. "),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("Kembali"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await openAppSettings();
+              },
+              child: const Text("Buka Pengaturan"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,7 +155,6 @@ class _SignUpPageState extends State<SignUpPage> {
                     color: const Color.fromRGBO(3, 23, 73, 1))),
             CarouselSlider(
               items: [
-                //1st Image of Slider
                 Container(
                   margin: const EdgeInsets.all(6.0),
                   decoration: BoxDecoration(
@@ -173,8 +165,6 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
-
-                //2nd Image of Slider
                 Container(
                   margin: const EdgeInsets.all(6.0),
                   decoration: BoxDecoration(
@@ -185,8 +175,6 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
-
-                //3rd Image of Slider
                 Container(
                   margin: const EdgeInsets.all(6.0),
                   decoration: BoxDecoration(
@@ -198,8 +186,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
               ],
-
-              //Slider Container properties
               options: CarouselOptions(
                 height: 180.0,
                 enlargeCenterPage: true,
