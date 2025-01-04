@@ -1,11 +1,10 @@
 import 'package:petaniku/pages/camera_page.dart';
 import 'package:petaniku/pages/dashboard_page.dart';
 import 'package:petaniku/pages/history_page.dart';
+import 'package:petaniku/pages/signup_page.dart';
 import 'package:petaniku/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:petaniku/pages/tes.dart';
-import 'pages/signup_page.dart';
 import 'package:camera/camera.dart';
 
 // Global variable to store available cameras
@@ -40,8 +39,7 @@ class MyApp extends StatelessWidget {
         "/camera": (context) => CameraPage(
               camera: cameras.first,
             ),
-        "/history": (context) => PhotoHistoryPage(),
-        "/tes": (context) => tes()
+        "/history": (context) => PhotoHistoryPage()
       },
     );
   }
@@ -59,7 +57,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
   // List of pages for navigation
   final List<Widget> _pages = [
-    const DashboardPage(),
+    DashboardPage(),
     CameraPage(camera: cameras.first),
     PhotoHistoryPage(),
   ];
