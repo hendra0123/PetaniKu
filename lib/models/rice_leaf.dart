@@ -1,13 +1,13 @@
 part of 'models.dart';
 
-class Image extends Equatable {
+class RiceLeaf extends Equatable {
   final LatLng? coordinate;
   final int? level;
   final String? url;
 
-  const Image({this.coordinate, this.level, this.url});
+  const RiceLeaf({this.coordinate, this.level, this.url});
 
-  factory Image.fromJson(Map<String, dynamic> json) => Image(
+  factory RiceLeaf.fromJson(Map<String, dynamic> json) => RiceLeaf(
         coordinate: LatLng(
           (json['latitude'] as num).toDouble(),
           (json['longitude'] as num).toDouble(),
@@ -22,12 +22,12 @@ class Image extends Equatable {
         'url': url,
       };
 
-  Image copyWith({
+  RiceLeaf copyWith({
     LatLng? coordinate,
     int? level,
     String? url,
   }) {
-    return Image(
+    return RiceLeaf(
       coordinate: coordinate ?? this.coordinate,
       level: level ?? this.level,
       url: url ?? this.url,

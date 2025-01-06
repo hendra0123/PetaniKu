@@ -1,6 +1,9 @@
 part of 'shared.dart';
 
 class GeoUtil {
+  static final _dbscan = DBSCANRiceLeaf(epsilon: 20, minPoints: 2);
+  static final _polygonGenerator = PolygonGenerator();
+
   static Future<LatLng> findCurrentPosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -47,8 +50,7 @@ class GeoUtil {
 
     // Calculate zoom level for width and height
     double latZoom = () {
-      double rad(double deg) => deg * pi / 180;
-      double mercatorY(double lat) => log(tan(pi / 4 + rad(lat) / 2));
+      double mercatorY(double lat) => log(tan(pi / 4 + degToRadian(lat) / 2));
       double scaleY = height / tileSize;
 
       return log(scaleY / (mercatorY(maxLat) - mercatorY(minLat))) / ln2;
@@ -63,17 +65,16 @@ class GeoUtil {
   }
 
   static num findDistanceBetween(LatLng origin, LatLng target) {
-    final originCoord = mp.LatLng(origin.latitude, origin.longitude);
-    final targetCoord = mp.LatLng(target.latitude, target.longitude);
-    return mp.SphericalUtil.computeDistanceBetween(originCoord, targetCoord);
+    return Geolocator.distanceBetween(
+        origin.latitude, origin.longitude, target.latitude, target.longitude);
   }
 
   static LatLng findPolygonCenter(List<LatLng> points) {
     double x = 0, y = 0, z = 0;
 
     for (var point in points) {
-      final latRad = point.latitude * pi / 180;
-      final lonRad = point.longitude * pi / 180;
+      final latRad = degToRadian(point.latitude);
+      final lonRad = degToRadian(point.longitude);
 
       // Convert to Cartesian coordinates
       x += cos(latRad) * cos(lonRad);
@@ -92,12 +93,12 @@ class GeoUtil {
     final hyp = sqrt(x * x + y * y);
     final lat = atan2(z, hyp);
 
-    return LatLng(lat * 180 / pi, lon * 180 / pi);
+    return LatLng(radianToDeg(lat), radianToDeg(lon));
   }
 
   static double findPolygonArea(List<LatLng> points) {
-    double area = mp.SphericalUtil.computeArea(_convertPoints(points)) /
-        10000; // m2 to hectare
+    // square meter to hectare
+    double area = mp.SphericalUtil.computeArea(_convertPoints(points)) / 10000;
     return double.parse(area.toStringAsFixed(2));
   }
 
@@ -128,6 +129,22 @@ class GeoUtil {
       }
     }
     return true; // No intersections found
+  }
+
+  static List<LatLng> generateCirclePolygon(
+      LatLng point, double distanceToPerimeter, List<LatLng> boundaryPoints) {
+    return _polygonGenerator.circlePolygon(point, distanceToPerimeter, boundaryPoints);
+  }
+
+  static List<LatLng> generateRoundedBoxPolygon(
+      List<LatLng> points, double distanceToPerimeter, List<LatLng> boundaryPoints) {
+    return points.isNotEmpty
+        ? _polygonGenerator.roundedBoxPolygon(points, distanceToPerimeter, boundaryPoints)
+        : [];
+  }
+
+  static Map<String, List> groupRiceLeaves(List<RiceLeaf> riceLeaves) {
+    return _dbscan.run(riceLeaves);
   }
 
   static bool _doEdgesIntersect(LatLng a, LatLng b, LatLng c, LatLng d) {

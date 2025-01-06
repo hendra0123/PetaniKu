@@ -3,10 +3,10 @@ part of 'repository.dart';
 class PredictionRepository {
   final String prefixEndpoint = "/user/predictions";
 
-  Future<List<History>> fetchHistories() async {
+  Future<List<Prediction>> fetchHistories() async {
     try {
       dynamic response = await apiServices.getJSONRequest(prefixEndpoint);
-      return (response as List).map((e) => History.fromJson(e)).toList();
+      return (response as List).map((e) => Prediction.fromJson(e)).toList();
     } catch (e) {
       rethrow;
     }

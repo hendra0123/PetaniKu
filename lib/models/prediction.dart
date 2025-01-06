@@ -6,12 +6,11 @@ class Prediction extends Equatable {
   final int? nitrogenRequired;
   final String? plantingType;
   final DateTime? createdTime;
-  final List<Image>? images;
+  final List<RiceLeaf>? riceLeaves;
   final int? paddyAge;
-  final List<RiceField>? riceField;
+  final RiceField? riceField;
   final double? fertilizerRequired;
   final String? season;
-  final int? area;
 
   const Prediction({
     this.ureaRequired,
@@ -19,12 +18,11 @@ class Prediction extends Equatable {
     this.nitrogenRequired,
     this.plantingType,
     this.createdTime,
-    this.images,
+    this.riceLeaves,
     this.paddyAge,
     this.riceField,
     this.fertilizerRequired,
     this.season,
-    this.area,
   });
 
   factory Prediction.fromJson(Map<String, dynamic> json) => Prediction(
@@ -34,16 +32,15 @@ class Prediction extends Equatable {
         plantingType: json['planting_type'] as String?,
         createdTime:
             json['created_time'] == null ? null : DateTime.parse(json['created_time'] as String),
-        images: (json['images'] as List<dynamic>?)
-            ?.map((e) => Image.fromJson(e as Map<String, dynamic>))
+        riceLeaves: (json['images'] as List<dynamic>?)
+            ?.map((e) => RiceLeaf.fromJson(e as Map<String, dynamic>))
             .toList(),
         paddyAge: json['paddy_age'] as int?,
-        riceField: (json['rice_field'] as List<dynamic>?)
-            ?.map((e) => RiceField.fromJson(e as Map<String, dynamic>))
-            .toList(),
+        riceField: json['rice_field'] == null
+            ? null
+            : RiceField.fromJson(json['rice_field'] as Map<String, dynamic>),
         fertilizerRequired: (json['fertilizer_required'] as num?)?.toDouble(),
         season: json['season'] as String?,
-        area: json['area'] as int?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -52,12 +49,11 @@ class Prediction extends Equatable {
         'nitrogen_required': nitrogenRequired,
         'planting_type': plantingType,
         'created_time': createdTime?.toIso8601String(),
-        'images': images?.map((e) => e.toJson()).toList(),
+        'images': riceLeaves?.map((e) => e.toJson()).toList(),
         'paddy_age': paddyAge,
-        'rice_field': riceField?.map((e) => e.toJson()).toList(),
+        'rice_field': riceField?.toJson(),
         'fertilizer_required': fertilizerRequired,
         'season': season,
-        'area': area,
       };
 
   Prediction copyWith({
@@ -66,12 +62,11 @@ class Prediction extends Equatable {
     int? nitrogenRequired,
     String? plantingType,
     DateTime? createdTime,
-    List<Image>? images,
+    List<RiceLeaf>? images,
     int? paddyAge,
-    List<RiceField>? riceField,
+    RiceField? riceField,
     double? fertilizerRequired,
     String? season,
-    int? area,
   }) {
     return Prediction(
       ureaRequired: ureaRequired ?? this.ureaRequired,
@@ -79,12 +74,11 @@ class Prediction extends Equatable {
       nitrogenRequired: nitrogenRequired ?? this.nitrogenRequired,
       plantingType: plantingType ?? this.plantingType,
       createdTime: createdTime ?? this.createdTime,
-      images: images ?? this.images,
+      riceLeaves: images ?? this.riceLeaves,
       paddyAge: paddyAge ?? this.paddyAge,
       riceField: riceField ?? this.riceField,
       fertilizerRequired: fertilizerRequired ?? this.fertilizerRequired,
       season: season ?? this.season,
-      area: area ?? this.area,
     );
   }
 
@@ -96,12 +90,11 @@ class Prediction extends Equatable {
       nitrogenRequired,
       plantingType,
       createdTime,
-      images,
+      riceLeaves,
       paddyAge,
       riceField,
       fertilizerRequired,
       season,
-      area,
     ];
   }
 }

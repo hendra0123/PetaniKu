@@ -4,7 +4,7 @@ class Summary extends Equatable {
   final String? season;
   final int? paddyAge;
   final String? plantingType;
-  final List<Image>? images;
+  final List<RiceLeaf>? images;
   final DateTime? createdTime;
   final List<Statistic>? statistics;
 
@@ -22,11 +22,10 @@ class Summary extends Equatable {
         paddyAge: json['paddy_age'] as int?,
         plantingType: json['planting_type'] as String?,
         images: (json['images'] as List<dynamic>?)
-            ?.map((e) => Image.fromJson(e as Map<String, dynamic>))
+            ?.map((e) => RiceLeaf.fromJson(e as Map<String, dynamic>))
             .toList(),
-        createdTime: json['created_time'] == null
-            ? null
-            : DateTime.parse(json['created_time'] as String),
+        createdTime:
+            json['created_time'] == null ? null : DateTime.parse(json['created_time'] as String),
         statistics: (json['statistics'] as List<dynamic>?)
             ?.map((e) => Statistic.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -45,7 +44,7 @@ class Summary extends Equatable {
     String? season,
     int? paddyAge,
     String? plantingType,
-    List<Image>? images,
+    List<RiceLeaf>? images,
     DateTime? createdTime,
     List<Statistic>? statistics,
   }) {
