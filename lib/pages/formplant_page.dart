@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:petaniku/const.dart';
+import 'package:petaniku/shared/shared.dart';
 
 class FormPlant extends StatefulWidget {
   final List<File> images;
@@ -33,9 +33,7 @@ class _FormPageState extends State<FormPlant> {
   }
 
   void _submitForm() {
-    if (selectedSeason == null ||
-        selectedPlantingType == null ||
-        paddyAge.text.isEmpty) {
+    if (selectedSeason == null || selectedPlantingType == null || paddyAge.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Mohon lengkapi semua field sebelum mengirim."),
@@ -83,7 +81,7 @@ class _FormPageState extends State<FormPlant> {
     try {
       final request = http.MultipartRequest('POST', Uri.parse(url));
 
-      print("Token: ${Const.token}");
+      print("Token: ${AppConstant.authentication}");
 
       request.headers['Authorization'] =
           'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiaGEwY1F5S3pnMm83SEZOclVZazQiLCJleHAiOjE3MzYyMTIyODEsImlhdCI6MTczNjEyNTg4MX0.VuX9XWAf1TRxC-SVA-rRkYPNlAGxJUUPti8vF_kwi4Q';
@@ -226,8 +224,7 @@ class _FormPageState extends State<FormPlant> {
                   onPressed: _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
                   child: const Text(
                     "Kirim Data",
