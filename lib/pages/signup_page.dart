@@ -6,8 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:get_phone_number/get_phone_number.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:http/http.dart' as http;
-import 'package:petaniku/shared/shared.dart';
+import 'package:petaniku/repository/repository.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -23,7 +22,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _phoneController = TextEditingController();
   bool? isChecked = false;
   String? simNumber;
-  String url = "https://dmlj3k21-5000.asse.devtunnels.ms/user";
+  UserRepository userRepository = UserRepository();
 
   @override
   void initState() {
@@ -54,24 +53,18 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  Future<void> fetchLogin() async {
-    dynamic response = await http.post(Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode({'name': _nameController.text, 'phone': _phoneController.text}));
-    if (response.statusCode == 201) {
-      final json = jsonDecode(response.body);
-      AppConstant.authentication = json['token'];
+  Future<void> fetchRegister() async {
+    try {
+      String message = await userRepository.register(_nameController.text, _phoneController.text);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(jsonDecode(response.body)['pesan'])),
+        SnackBar(content: Text(jsonDecode(message))),
       );
 
       Navigator.of(context).pushNamedAndRemoveUntil("/dashboard", (route) => false);
-    } else if (response.statusCode == 400) {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(jsonDecode(response.body)['pesan']),
+          content: Text(jsonDecode(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -102,7 +95,7 @@ class _SignUpPageState extends State<SignUpPage> {
         return;
       }
 
-      fetchLogin();
+      fetchRegister();
     }
   }
 

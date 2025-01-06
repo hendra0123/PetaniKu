@@ -6,8 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:get_phone_number/get_phone_number.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:http/http.dart' as http;
-import 'package:petaniku/shared/shared.dart';
+import 'package:petaniku/repository/repository.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,11 +17,11 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  String url = "https://dmlj3k21-5000.asse.devtunnels.ms/user/login";
   final TextEditingController _phoneController = TextEditingController();
   bool? isChecked = false;
   var message = 'Please try to functions below.';
   String? simNumber;
+  UserRepository userRepository = UserRepository();
 
   Future<void> requestPhoneCallPermission() async {
     final status = await Permission.phone.status;
@@ -76,23 +75,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> fetchLogin() async {
-    dynamic response = await http.post(Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode({'phone': _phoneController.text}));
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      AppConstant.authentication = json['token'];
+    try {
+      String message = await userRepository.login(_phoneController.text);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(jsonDecode(response.body)['pesan'])),
+        SnackBar(content: Text(jsonDecode(message))),
       );
 
       Navigator.of(context).pushNamedAndRemoveUntil("/dashboard", (route) => false);
-    } else if (response.statusCode == 400) {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(jsonDecode(response.body)['pesan']),
+          content: Text(jsonDecode(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
