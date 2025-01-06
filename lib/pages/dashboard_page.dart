@@ -1,11 +1,4 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
-import 'package:permission_handler/permission_handler.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+part of 'pages.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -15,32 +8,26 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  List<String> selectedDays = [];
-  List<Timer> _timers = [];
-  int selectedHour = 9;
-  int selectedMinute = 0;
-  bool isAlarmEnabled = false;
-  Duration remainingTime = Duration.zero;
-  List<DateTime> targetDates = [];
-  int indexTargetDates = 0;
-  var message = 'Please try to functions below.';
-  String _displayText = '';
-  int _charIndex = 0;
-  // bool _isTyping = true;
-  String _firstMessage = '';
+  final List<String> days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
   final String _secondMessage = 'Semangat Hari Ini!';
-  final List<String> days = [
-    'Senin',
-    'Selasa',
-    'Rabu',
-    'Kamis',
-    'Jumat',
-    'Sabtu',
-    'Minggu'
-  ];
-
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+
+  List<String> selectedDays = [];
+  List<DateTime> targetDates = [];
+  List<Timer> _timers = [];
+  bool isAlarmEnabled = false;
+  // bool _isTyping = true;
+  int _charIndex = 0;
+  int selectedHour = 9;
+  int selectedMinute = 0;
+  int indexTargetDates = 0;
+  String message = 'Please try to functions below.';
+  String _displayText = '';
+  String _firstMessage = '';
+  Duration remainingTime = Duration.zero;
+
+  late UserViewModel userViewModel;
 
   Future<void> requestNotificationPermission() async {
     final status = await Permission.notification.status;
@@ -91,6 +78,13 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       },
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    userViewModel = Provider.of<UserViewModel>(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) => userViewModel.getUserData());
   }
 
   @override
@@ -204,8 +198,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    const AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails(
+    const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
       'alarm_channel_id',
       'Alarm Notifications',
       channelDescription: 'Notifikasi alarm untuk jadwal pengecekan tanaman',
@@ -229,38 +222,31 @@ class _DashboardPageState extends State<DashboardPage> {
 
       if (weekday == now.weekday) {
         // Hari yang sama dengan hari ini
-        if (selectedHour > now.hour ||
-            (selectedHour == now.hour && selectedMinute > now.minute)) {
+        if (selectedHour > now.hour || (selectedHour == now.hour && selectedMinute > now.minute)) {
           // Jika waktu belum lewat
-          targetDate = DateTime(
-              now.year, now.month, now.day, selectedHour, selectedMinute);
+          targetDate = DateTime(now.year, now.month, now.day, selectedHour, selectedMinute);
         } else {
           // Jika waktu sudah lewat, pindahkan ke minggu depan
           targetDate = now.add(Duration(days: 7));
-          targetDate = DateTime(
-              targetDate.year,
-              targetDate.month,
-              targetDate.day - targetDate.weekday + weekday,
-              selectedHour,
-              selectedMinute);
+          targetDate = DateTime(targetDate.year, targetDate.month,
+              targetDate.day - targetDate.weekday + weekday, selectedHour, selectedMinute);
         }
       } else if (weekday > now.weekday) {
         // Hari di minggu ini
         int daysUntil = weekday - now.weekday;
         targetDate = now.add(Duration(days: daysUntil));
-        targetDate = DateTime(targetDate.year, targetDate.month, targetDate.day,
-            selectedHour, selectedMinute);
+        targetDate = DateTime(
+            targetDate.year, targetDate.month, targetDate.day, selectedHour, selectedMinute);
       } else {
         // Hari di minggu depan
         int daysUntilNextWeek = 7 - (now.weekday - weekday);
         targetDate = now.add(Duration(days: daysUntilNextWeek));
-        targetDate = DateTime(targetDate.year, targetDate.month, targetDate.day,
-            selectedHour, selectedMinute);
+        targetDate = DateTime(
+            targetDate.year, targetDate.month, targetDate.day, selectedHour, selectedMinute);
       }
 
       // Konversi ke TZDateTime
-      final tz.TZDateTime tzTargetDate =
-          tz.TZDateTime.from(targetDate, tz.local);
+      final tz.TZDateTime tzTargetDate = tz.TZDateTime.from(targetDate, tz.local);
 
       targetDates.add(tzTargetDate);
 
@@ -272,16 +258,14 @@ class _DashboardPageState extends State<DashboardPage> {
         tzTargetDate,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       );
     }
   }
 
   Future<void> testNotification() async {
-    const AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails(
+    const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
       'test_channel_id',
       'Test Notifications',
       channelDescription: 'Notifikasi untuk pengujian',
@@ -372,15 +356,13 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                           Text(
                             tempSelectedHour.toString().padLeft(2, '0'),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 24),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                           ),
                           IconButton(
                             icon: const Icon(Icons.arrow_drop_down, size: 30),
                             onPressed: () {
                               setDialogState(() {
-                                tempSelectedHour =
-                                    (tempSelectedHour - 1 + 24) % 24;
+                                tempSelectedHour = (tempSelectedHour - 1 + 24) % 24;
                               });
                             },
                           ),
@@ -389,8 +371,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       const SizedBox(width: 10),
                       const Text(
                         ':',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 24),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -399,22 +380,19 @@ class _DashboardPageState extends State<DashboardPage> {
                             icon: const Icon(Icons.arrow_drop_up, size: 30),
                             onPressed: () {
                               setDialogState(() {
-                                tempSelectedMinute =
-                                    (tempSelectedMinute + 1) % 60;
+                                tempSelectedMinute = (tempSelectedMinute + 1) % 60;
                               });
                             },
                           ),
                           Text(
                             tempSelectedMinute.toString().padLeft(2, '0'),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 24),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                           ),
                           IconButton(
                             icon: const Icon(Icons.arrow_drop_down, size: 30),
                             onPressed: () {
                               setDialogState(() {
-                                tempSelectedMinute =
-                                    (tempSelectedMinute - 1 + 60) % 60;
+                                tempSelectedMinute = (tempSelectedMinute - 1 + 60) % 60;
                               });
                             },
                           ),
@@ -468,146 +446,148 @@ class _DashboardPageState extends State<DashboardPage> {
         centerTitle: true,
         title: Text(
           _displayText,
-          style: const TextStyle(
-              fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.grey.shade300,
         foregroundColor: Colors.black,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Pengecekan Lahan',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height * 0.15,
-                  margin: const EdgeInsets.all(8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2), // Efek bayangan
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.add_circle,
-                    size: 50,
-                  )),
-              const SizedBox(height: 10),
-              const Text(
-                'Hasil Panen',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              LineChartSample2(),
-              const Text(
-                'Penghematan Pupuk',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              LineChartSample2(),
-              const Text(
-                'Jadwal Pengecekan Tanaman',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap:
-                    showAlarmSettingsDialog, // Klik seluruh widget untuk mengatur waktu
-                child: Container(
-                  margin: const EdgeInsets.all(8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2), // Efek bayangan
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Bagian Waktu
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}', // Menampilkan waktu terpilih
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            sortedDays.isEmpty
-                                ? 'Tekan untuk memilih hari'
-                                : sortedDays.join(', '),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                      ),
+      body: Expanded(
+        child: Consumer<UserViewModel>(builder: (_, userViewModel, __) {
+          if (userViewModel.status == Status.loading) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF729762)));
+          }
 
-                      // Toggle Switch
-                      Switch(
-                        value: isAlarmEnabled,
-                        onChanged: (value) async {
-                          requestNotificationPermission();
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pengecekan Lahan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.of(context).size.height * 0.15,
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: const Offset(0, 2), // Efek bayangan
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.add_circle,
+                      size: 50,
+                    )),
+                const SizedBox(height: 10),
+                const Text(
+                  'Hasil Panen',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                LineChartSample2(),
+                const Text(
+                  'Penghematan Pupuk',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                LineChartSample2(),
+                const Text(
+                  'Jadwal Pengecekan Tanaman',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: showAlarmSettingsDialog, // Klik seluruh widget untuk mengatur waktu
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: const Offset(0, 2), // Efek bayangan
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Bagian Waktu
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}', // Menampilkan waktu terpilih
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              sortedDays.isEmpty
+                                  ? 'Tekan untuk memilih hari'
+                                  : sortedDays.join(', '),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                        ),
 
-                          if (selectedDays.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Pilih minimal satu hari untuk mengaktifkan alarm.'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          setState(() {
-                            isAlarmEnabled = value;
-                          });
-                          if (isAlarmEnabled) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Alarm diatur pada ${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} untuk hari ${selectedDays.isEmpty ? 'tidak ada hari' : selectedDays.join(', ')}'),
-                              ),
-                            );
-                          }
-                        },
-                        activeColor: Colors.green, // Warna toggle aktif
-                      ),
-                    ],
+                        // Toggle Switch
+                        Switch(
+                          value: isAlarmEnabled,
+                          onChanged: (value) async {
+                            requestNotificationPermission();
+
+                            if (selectedDays.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Pilih minimal satu hari untuk mengaktifkan alarm.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+                            setState(() {
+                              isAlarmEnabled = value;
+                            });
+                            if (isAlarmEnabled) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Alarm diatur pada ${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} untuk hari ${selectedDays.isEmpty ? 'tidak ada hari' : selectedDays.join(', ')}'),
+                                ),
+                              );
+                            }
+                          },
+                          activeColor: Colors.green, // Warna toggle aktif
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
@@ -791,9 +771,7 @@ class _LineChartSample2State extends State<LineChartSample2> {
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
-              colors: gradientColors
-                  .map((color) => color.withOpacity(0.3))
-                  .toList(),
+              colors: gradientColors.map((color) => color.withOpacity(0.3)).toList(),
             ),
           ),
         ),
@@ -869,10 +847,8 @@ class _LineChartSample2State extends State<LineChartSample2> {
           isCurved: true,
           gradient: LinearGradient(
             colors: [
-              ColorTween(begin: gradientColors[0], end: gradientColors[1])
-                  .lerp(0.2)!,
-              ColorTween(begin: gradientColors[0], end: gradientColors[1])
-                  .lerp(0.2)!,
+              ColorTween(begin: gradientColors[0], end: gradientColors[1]).lerp(0.2)!,
+              ColorTween(begin: gradientColors[0], end: gradientColors[1]).lerp(0.2)!,
             ],
           ),
           barWidth: 5,

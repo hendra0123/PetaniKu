@@ -3,16 +3,15 @@ part of 'view_model.dart';
 class UserViewModel extends ChangeNotifier {
   static final UserViewModel _instance = UserViewModel._internal(UserRepository());
   factory UserViewModel() => _instance;
-  UserViewModel._internal(this.userRepo);
+  UserViewModel._internal(this._userRepo);
 
-  final UserRepository userRepo;
+  final UserRepository _userRepo;
   ApiResponse<User> _response = ApiResponse.notStarted();
   bool _hasDataChanged = true;
 
-  ApiResponse<User> get response => _response;
-  bool get hasDataChanged => _hasDataChanged;
   User? get user => _response.data;
   RiceField? get riceField => _response.data?.riceField;
+  Status? get status => _response.status;
 
   void setApiResponse(ApiResponse<User> result) {
     _response = result;
@@ -20,13 +19,13 @@ class UserViewModel extends ChangeNotifier {
   }
 
   Future<void> getUserData() async {
-    if (!_hasDataChanged) return;
+    if (!_hasDataChanged || status == Status.loading) return;
 
-    setApiResponse(ApiResponse.loading());
+    setApiResponse(ApiResponse.loading(null));
     try {
-      User userData = await userRepo.fetchDashboard();
-      setApiResponse(ApiResponse.completed(userData));
+      User userData = await _userRepo.fetchDashboard();
       _hasDataChanged = false;
+      setApiResponse(ApiResponse.completed(userData));
     } catch (error) {
       setApiResponse(ApiResponse.error(error.toString()));
     }
@@ -36,17 +35,44 @@ class UserViewModel extends ChangeNotifier {
     if (field.coordinates == null || field.area == null) {
       return "Koordinat dan luas tidak boleh kosong";
     }
+    setApiResponse(ApiResponse.loading(user));
     try {
-      String message = await userRepo.saveRiceField(field.coordinates!, field.area!);
-      if (response.data != null) {
+      String message = await _userRepo.saveRiceField(field.coordinates!, field.area!);
+      _hasDataChanged = true;
+      if (_response.data != null) {
         setApiResponse(ApiResponse.completed(_response.data?.copyWith(riceField: field)));
       } else {
         setApiResponse(ApiResponse.completed(User(riceField: field)));
       }
-      _hasDataChanged = true;
       return message;
     } catch (error) {
       return error.toString();
+    }
+  }
+
+  Future<String> postLogin(String phone) async {
+    setApiResponse(ApiResponse.loading(null));
+    try {
+      String message = await _userRepo.login(phone);
+      _hasDataChanged = true;
+      setApiResponse(ApiResponse.notStarted());
+      return message;
+    } catch (error) {
+      setApiResponse(ApiResponse.notStarted());
+      return Future.error(error.toString());
+    }
+  }
+
+  Future<String> postRegister(String name, String phone) async {
+    setApiResponse(ApiResponse.loading(null));
+    try {
+      String message = await _userRepo.register(name, phone);
+      _hasDataChanged = true;
+      setApiResponse(ApiResponse.notStarted());
+      return message;
+    } catch (error) {
+      setApiResponse(ApiResponse.notStarted());
+      return Future.error(error.toString());
     }
   }
 }

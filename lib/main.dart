@@ -1,9 +1,4 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:petaniku/pages/camera_page.dart';
-import 'package:petaniku/pages/dashboard_page.dart';
-import 'package:petaniku/pages/history_page.dart';
-import 'package:petaniku/pages/signup_page.dart';
-import 'package:petaniku/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:petaniku/pages/pages.dart';
@@ -41,7 +36,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: "/map",
+      initialRoute: "/login",
       routes: {
         "/dashboard": (context) => const MainNavigationPage(),
         "/signup": (context) => const SignUpPage(),

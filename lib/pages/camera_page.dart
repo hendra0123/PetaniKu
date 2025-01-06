@@ -1,8 +1,4 @@
-import 'dart:io';
-
-import 'package:camera/camera.dart';
-import 'package:flutter/material.dart';
-import 'package:petaniku/pages/formplant_page.dart';
+part of 'pages.dart';
 
 class CameraPage extends StatefulWidget {
   final CameraDescription camera;
@@ -56,8 +52,7 @@ class _CameraPageState extends State<CameraPage> {
               },
               child: const Text(
                 "OK",
-                style:
-                    TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -154,8 +149,7 @@ class _CameraPageState extends State<CameraPage> {
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.all(10),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
@@ -193,11 +187,9 @@ class _CameraPageState extends State<CameraPage> {
                             decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(10),
-                                border:
-                                    Border.all(color: Colors.green, width: 2)),
+                                border: Border.all(color: Colors.green, width: 2)),
                             child: const Center(
-                              child: Icon(Icons.add,
-                                  color: Colors.green, size: 50),
+                              child: Icon(Icons.add, color: Colors.green, size: 50),
                             ),
                           ),
                         );
@@ -210,16 +202,13 @@ class _CameraPageState extends State<CameraPage> {
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     onPressed: () {
-                      final imageFiles = _capturedImages
-                          .map((xfile) => File(xfile.path))
-                          .toList();
+                      final imageFiles = _capturedImages.map((xfile) => File(xfile.path)).toList();
 
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -243,8 +232,7 @@ class _CameraPageState extends State<CameraPage> {
 class FullScreenImageView extends StatelessWidget {
   final String imagePath;
 
-  const FullScreenImageView({Key? key, required this.imagePath})
-      : super(key: key);
+  const FullScreenImageView({Key? key, required this.imagePath}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
