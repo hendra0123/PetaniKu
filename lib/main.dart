@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:petaniku/pages/camera_page.dart';
 import 'package:petaniku/pages/dashboard_page.dart';
 import 'package:petaniku/pages/history_page.dart';
@@ -5,6 +6,9 @@ import 'package:petaniku/pages/signup_page.dart';
 import 'package:petaniku/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:petaniku/pages/pages.dart';
+import 'package:petaniku/view_model/view_model.dart';
+import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 
 // Global variable to store available cameras
@@ -12,10 +16,16 @@ late List<CameraDescription> cameras;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
 
   // Initialize cameras
   cameras = await availableCameras();
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => UserViewModel(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -27,11 +37,11 @@ class MyApp extends StatelessWidget {
       title: 'PetaniKu',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        textTheme: GoogleFonts.poppinsTextTheme(),
+        fontFamily: GoogleFonts.poppins().fontFamily,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: "/signup",
+      initialRoute: "/map",
       routes: {
         "/dashboard": (context) => const MainNavigationPage(),
         "/signup": (context) => const SignUpPage(),
@@ -39,7 +49,8 @@ class MyApp extends StatelessWidget {
         "/camera": (context) => CameraPage(
               camera: cameras.first,
             ),
-        "/history": (context) => PhotoHistoryPage()
+        "/history": (context) => PhotoHistoryPage(),
+        "/map": (context) => const MapPage(),
       },
     );
   }
