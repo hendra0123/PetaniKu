@@ -34,8 +34,8 @@ class MyApp extends StatelessWidget {
       initialRoute: "/signup",
       routes: {
         "/dashboard": (context) => const MainNavigationPage(),
-        "/signup": (context) => SignUpPage(),
-        "/login": (context) => LoginPage(),
+        "/signup": (context) => const SignUpPage(),
+        "/login": (context) => const LoginPage(),
         "/camera": (context) => CameraPage(
               camera: cameras.first,
             ),
@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MainNavigationPage extends StatefulWidget {
-  const MainNavigationPage({Key? key}) : super(key: key);
+  const MainNavigationPage({super.key});
 
   @override
   State<MainNavigationPage> createState() => _MainNavigationPageState();
@@ -57,7 +57,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
   // List of pages for navigation
   final List<Widget> _pages = [
-    DashboardPage(),
+    const DashboardPage(),
     CameraPage(camera: cameras.first),
     PhotoHistoryPage(),
   ];
