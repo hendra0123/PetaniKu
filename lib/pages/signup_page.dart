@@ -1,11 +1,17 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:get_phone_number/get_phone_number.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
+import 'package:petaniku/const.dart';
 
 class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
+
   @override
   State<SignUpPage> createState() => _SignUpPageState();
 }
@@ -13,14 +19,11 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   var message = 'Please try to functions below.';
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController _nameController = TextEditingController();
-
   final TextEditingController _phoneController = TextEditingController();
-
   bool? isChecked = false;
-
   String? simNumber;
+  String url = "https://dmlj3k21-5000.asse.devtunnels.ms/user";
 
   @override
   void initState() {
@@ -33,12 +36,10 @@ class _SignUpPageState extends State<SignUpPage> {
     if (status.isDenied || status.isRestricted) {
       await Permission.phone.request();
     }
-
     if (status.isPermanentlyDenied) {
       _showPermissionDialog();
       return;
     }
-
     if (await Permission.phone.isGranted) {
       try {
         String result = await GetPhoneNumber().getPhoneNumber();
@@ -50,6 +51,61 @@ class _SignUpPageState extends State<SignUpPage> {
       }
     } else {
       _showPermissionDialog();
+    }
+  }
+
+  Future<void> fetchLogin() async {
+    dynamic response = await http.post(Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(
+            {'name': _nameController.text, 'phone': _phoneController.text}));
+    if (response.statusCode == 201) {
+      final json = jsonDecode(response.body);
+      Const.token = json['token'];
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(jsonDecode(response.body)['pesan'])),
+      );
+
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil("/dashboard", (route) => false);
+    } else if (response.statusCode == 400) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(jsonDecode(response.body)['pesan']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _validateAndSubmit() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      await requestPhoneCallPermission();
+
+      if (simNumber == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nomor telepon SIM tidak tersedia.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      final enteredPhoneNumber = _phoneController.text.trim();
+      if (enteredPhoneNumber != simNumber) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      fetchLogin();
     }
   }
 
@@ -85,92 +141,51 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Future<void> _validateAndSubmit() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      await requestPhoneCallPermission();
-
-      if (simNumber == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nomor telepon SIM tidak tersedia.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      final enteredPhoneNumber = _phoneController.text.trim();
-      if (enteredPhoneNumber != simNumber) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Akun berhasil dibuat')),
-      );
-
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil("/dashboard", (route) => false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(children: [
             Text('Daftar Akun',
                 style: GoogleFonts.poppins(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
-                    color: Color.fromRGBO(3, 23, 73, 1))),
+                    color: const Color.fromRGBO(3, 23, 73, 1))),
             CarouselSlider(
               items: [
-                //1st Image of Slider
                 Container(
-                  margin: EdgeInsets.all(6.0),
+                  margin: const EdgeInsets.all(6.0),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8.0),
-                    image: DecorationImage(
+                    image: const DecorationImage(
                       image: AssetImage("assets/images/pdi3.jpeg"),
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
-
-                //2nd Image of Slider
                 Container(
-                  margin: EdgeInsets.all(6.0),
+                  margin: const EdgeInsets.all(6.0),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8.0),
-                    image: DecorationImage(
+                    image: const DecorationImage(
                       image: AssetImage("assets/images/pdi2.jpeg"),
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
-
-                //3rd Image of Slider
                 Container(
-                  margin: EdgeInsets.all(6.0),
+                  margin: const EdgeInsets.all(6.0),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8.0),
-                    image: DecorationImage(
+                    image: const DecorationImage(
                       image: AssetImage("assets/images/pdi1.jpeg"),
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
               ],
-
-              //Slider Container properties
               options: CarouselOptions(
                 height: 180.0,
                 enlargeCenterPage: true,
@@ -178,33 +193,34 @@ class _SignUpPageState extends State<SignUpPage> {
                 aspectRatio: 16 / 9,
                 autoPlayCurve: Curves.fastOutSlowIn,
                 enableInfiniteScroll: true,
-                autoPlayAnimationDuration: Duration(milliseconds: 800),
+                autoPlayAnimationDuration: const Duration(milliseconds: 800),
                 viewportFraction: 0.8,
               ),
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   TextFormField(
-                    cursorColor: Color.fromRGBO(8, 35, 103, 1),
+                    cursorColor: const Color.fromRGBO(8, 35, 103, 1),
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Nama',
-                      labelStyle:
-                          TextStyle(color: Color.fromRGBO(8, 35, 103, 1)),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                          borderSide: BorderSide(
-                              color: Color.fromRGBO(8, 35, 103, 1),
-                              width: 1.5)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                          borderSide: BorderSide(
-                              color: Color.fromRGBO(3, 23, 73, 1), width: 1.5)),
-                    ),
+                        labelText: 'Nama',
+                        labelStyle:
+                            TextStyle(color: Color.fromRGBO(8, 35, 103, 1)),
+                        focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(8)),
+                            borderSide: BorderSide(
+                                color: Color.fromRGBO(8, 35, 103, 1),
+                                width: 1.5)),
+                        enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(8)),
+                            borderSide: BorderSide(
+                                color: Color.fromRGBO(3, 23, 73, 1),
+                                width: 1.5)),
+                        border: OutlineInputBorder()),
                     keyboardType: TextInputType.name,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -213,12 +229,16 @@ class _SignUpPageState extends State<SignUpPage> {
                       if (value.length <= 2) {
                         return 'Nama harus lebih dari 2 huruf';
                       }
+
+                      if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                        return 'Nama hanya boleh mengandung huruf A-Z';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16.0),
                   TextFormField(
-                    cursorColor: Color.fromRGBO(8, 35, 103, 1),
+                    cursorColor: const Color.fromRGBO(8, 35, 103, 1),
                     controller: _phoneController,
                     decoration: const InputDecoration(
                       labelText: 'Nomor Telepon',
@@ -243,28 +263,28 @@ class _SignUpPageState extends State<SignUpPage> {
                       return null;
                     },
                   ),
-                  SizedBox(height: 16.0),
-                  Row(
-                    children: [
-                      Checkbox(
-                          side: const BorderSide(
-                              color: Color.fromRGBO(3, 23, 73, 1), width: 2),
-                          value: isChecked,
-                          activeColor: Color.fromRGBO(3, 23, 73, 1),
-                          onChanged: (newBool) {
-                            setState(() {
-                              isChecked = newBool;
-                            });
-                          }),
-                      Flexible(
-                        child: Text(
-                          "Dengan menekan Daftar, anda menyetujui untuk mengikuti kebijakan dan kondisi kami.",
-                          overflow: TextOverflow.visible,
-                          style: TextStyle(color: Color.fromRGBO(3, 23, 73, 1)),
-                        ),
-                      )
-                    ],
-                  ),
+                  const SizedBox(height: 16.0),
+                  // Row(
+                  //   children: [
+                  //     Checkbox(
+                  //         side: const BorderSide(
+                  //             color: Color.fromRGBO(3, 23, 73, 1), width: 2),
+                  //         value: isChecked,
+                  //         activeColor: const Color.fromRGBO(3, 23, 73, 1),
+                  //         onChanged: (newBool) {
+                  //           setState(() {
+                  //             isChecked = newBool;
+                  //           });
+                  //         }),
+                  //     const Flexible(
+                  //       child: Text(
+                  //         "Dengan menekan Daftar, anda menyetujui untuk mengikuti kebijakan dan kondisi kami.",
+                  //         overflow: TextOverflow.visible,
+                  //         style: TextStyle(color: Color.fromRGBO(3, 23, 73, 1)),
+                  //       ),
+                  //     )
+                  //   ],
+                  // ),
                   const SizedBox(height: 16.0),
                   SizedBox(
                     width: MediaQuery.sizeOf(context).width,
@@ -272,11 +292,11 @@ class _SignUpPageState extends State<SignUpPage> {
                     child: ElevatedButton(
                       style: ButtonStyle(
                           shape:
-                              MaterialStateProperty.all<RoundedRectangleBorder>(
-                                  RoundedRectangleBorder(
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                  const RoundedRectangleBorder(
                                       borderRadius: BorderRadius.all(
                                           Radius.circular(18)))),
-                          backgroundColor: MaterialStatePropertyAll(
+                          backgroundColor: const WidgetStatePropertyAll(
                               Color.fromRGBO(3, 23, 73, 1))),
                       onPressed: _validateAndSubmit,
                       child: const Text(
@@ -285,8 +305,8 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 16.0),
-                  Row(children: <Widget>[
+                  const SizedBox(height: 16.0),
+                  const Row(children: <Widget>[
                     Expanded(child: Divider()),
                     SizedBox(
                       width: 16,
@@ -297,18 +317,19 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                     Expanded(child: Divider()),
                   ]),
-                  SizedBox(height: 16.0),
+                  const SizedBox(height: 16.0),
                   SizedBox(
                     width: MediaQuery.sizeOf(context).width,
                     height: MediaQuery.sizeOf(context).height * 0.06,
                     child: ElevatedButton(
                       style: ButtonStyle(
-                          backgroundColor: WidgetStatePropertyAll(Colors.white),
+                          backgroundColor:
+                              const WidgetStatePropertyAll(Colors.white),
                           shape:
                               WidgetStateProperty.all<RoundedRectangleBorder>(
                                   RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(18.0),
-                                      side: BorderSide(
+                                      side: const BorderSide(
                                           color:
                                               Color.fromRGBO(3, 23, 73, 1))))),
                       onPressed: () {

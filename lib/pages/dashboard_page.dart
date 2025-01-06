@@ -1,14 +1,14 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({Key? key}) : super(key: key);
+  const DashboardPage({super.key});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -16,16 +16,19 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   List<String> selectedDays = [];
+  List<Timer> _timers = [];
   int selectedHour = 9;
   int selectedMinute = 0;
   bool isAlarmEnabled = false;
-  DateTime? nextCheckTime; // Waktu pengecekan berikutnya
-  late Timer _timer;
   Duration remainingTime = Duration.zero;
   List<DateTime> targetDates = [];
   int indexTargetDates = 0;
   var message = 'Please try to functions below.';
-
+  String _displayText = '';
+  int _charIndex = 0;
+  // bool _isTyping = true;
+  String _firstMessage = '';
+  final String _secondMessage = 'Semangat Hari Ini!';
   final List<String> days = [
     'Senin',
     'Selasa',
@@ -38,26 +41,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-
-  @override
-  void dispose() {
-    _timer.cancel(); // Menghentikan timer ketika halaman ditutup
-    super.dispose();
-  }
-
-  void _startCountdown() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (nextCheckTime != null) {
-        setState(() {
-          remainingTime = nextCheckTime!.difference(DateTime.now());
-          if (remainingTime.isNegative) {
-            remainingTime = Duration.zero;
-            _timer.cancel();
-          }
-        });
-      }
-    });
-  }
 
   Future<void> requestNotificationPermission() async {
     final status = await Permission.notification.status;
@@ -114,10 +97,85 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     initializeNotifications();
-    if (targetDates.isNotEmpty) {
-      nextCheckTime = targetDates[indexTargetDates];
+    _firstMessage = 'Selamat Pagi, Guest';
+    _checkAnimationStatus();
+  }
+
+  @override
+  void dispose() {
+    // Batalkan semua timer
+    for (var timer in _timers) {
+      timer.cancel();
     }
-    _startCountdown();
+    _timers.clear();
+    super.dispose();
+  }
+
+  Future<void> _checkAnimationStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isAnimationShown = prefs.getBool('isAnimationShown') ?? false;
+
+    if (isAnimationShown) {
+      // Jika animasi sudah selesai, langsung tampilkan pesan kedua
+      setState(() {
+        _displayText = _secondMessage;
+      });
+    } else {
+      // Jika belum, mulai animasi
+      _startTyping(_firstMessage, onComplete: () {
+        Future.delayed(const Duration(seconds: 1), () {
+          _startDeleting(onComplete: () {
+            _startTyping(_secondMessage, onComplete: () {
+              _markAnimationAsShown(); // Tandai animasi selesai
+            });
+          });
+        });
+      });
+    }
+  }
+
+  // Tandai animasi telah selesai
+  Future<void> _markAnimationAsShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isAnimationShown', true);
+  }
+
+  void _startTyping(String message, {VoidCallback? onComplete}) {
+    final timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_charIndex < message.length) {
+          _displayText = message.substring(0, _charIndex + 1);
+          _charIndex++;
+        } else {
+          timer.cancel();
+          _charIndex = 0;
+          if (onComplete != null) onComplete();
+        }
+      });
+    });
+    _timers.add(timer);
+  }
+
+  void _startDeleting({VoidCallback? onComplete}) {
+    final timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_displayText.isNotEmpty) {
+          _displayText = _displayText.substring(0, _displayText.length - 1);
+        } else {
+          timer.cancel();
+          if (onComplete != null) onComplete();
+        }
+      });
+    });
+    _timers.add(timer);
   }
 
   // Inisialisasi notifikasi dan timezone
@@ -400,45 +458,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _handleCheckReminder() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Pengecekan Tanaman'),
-          content:
-              const Text('Apakah Anda sudah melakukan pengecekan tanaman?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() {
-                  indexTargetDates++;
-                  nextCheckTime = DateTime.now()
-                      .add(Duration(days: targetDates[indexTargetDates].day));
-                  remainingTime = nextCheckTime!.difference(DateTime.now());
-                  _startCountdown();
-                });
-              },
-              child: const Text('Sudah'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() {
-                  nextCheckTime = DateTime.now().add(Duration(minutes: 5));
-                  remainingTime = nextCheckTime!.difference(DateTime.now());
-                  _startCountdown();
-                });
-              },
-              child: const Text('Belum'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // Urutkan selectedDays berdasarkan urutan di daysOrder
@@ -447,7 +466,11 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Beranda'),
+        title: Text(
+          _displayText,
+          style: const TextStyle(
+              fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
         backgroundColor: Colors.grey.shade300,
         foregroundColor: Colors.black,
       ),
@@ -457,63 +480,14 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Container(
-              //   width: double.infinity,
-              //   padding: EdgeInsets.all(16.0),
-              //   margin: EdgeInsets.all(8.0),
-              //   decoration: BoxDecoration(
-              //     color: Colors.lightBlue.shade100,
-              //     borderRadius: BorderRadius.circular(12.0),
-              //     boxShadow: [
-              //       BoxShadow(
-              //         color: Colors.black12,
-              //         blurRadius: 8.0,
-              //         offset: Offset(0, 4),
-              //       ),
-              //     ],
-              //   ),
-              //   child: Column(
-              //     crossAxisAlignment: CrossAxisAlignment.start,
-              //     children: [
-              //       Text(
-              //         'Reminder Pengecekan Tanaman',
-              //         style: TextStyle(
-              //           fontSize: 20.0,
-              //           fontWeight: FontWeight.bold,
-              //           color: Colors.blueAccent,
-              //         ),
-              //       ),
-              //       SizedBox(height: 8.0),
-              //       Text(
-              //         remainingTime > Duration.zero
-              //             ? 'Sisa waktu: ${_formatDuration(remainingTime)}'
-              //             : 'Waktunya melakukan pengecekan ulang!',
-              //         style: TextStyle(
-              //           fontSize: 16.0,
-              //           color: Colors.black87,
-              //         ),
-              //       ),
-              //       if (remainingTime == Duration.zero)
-              //         Row(
-              //           mainAxisAlignment: MainAxisAlignment.end,
-              //           children: [
-              //             ElevatedButton(
-              //               onPressed: _handleCheckReminder,
-              //               child: const Text('Cek Tanaman'),
-              //             ),
-              //           ],
-              //         ),
-              //     ],
-              //   ),
-              // ),
               const Text(
                 'Pengecekan Lahan',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 10),
               Container(
-                  width: 300,
-                  height: 100,
+                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height * 0.15,
                   margin: const EdgeInsets.all(8),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -533,7 +507,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     Icons.add_circle,
                     size: 50,
                   )),
-
               const SizedBox(height: 10),
               const Text(
                 'Hasil Panen',
@@ -587,7 +560,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                           Text(
                             sortedDays.isEmpty
-                                ? 'Tidak ada hari yang dipilih'
+                                ? 'Tekan untuk memilih hari'
                                 : sortedDays.join(', '),
                             style: const TextStyle(
                               fontSize: 14,

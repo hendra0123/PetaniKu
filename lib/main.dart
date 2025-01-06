@@ -2,14 +2,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:petaniku/pages/camera_page.dart';
 import 'package:petaniku/pages/dashboard_page.dart';
 import 'package:petaniku/pages/history_page.dart';
+import 'package:petaniku/pages/signup_page.dart';
 import 'package:petaniku/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:petaniku/pages/pages.dart';
-import 'package:petaniku/pages/tes.dart';
 import 'package:petaniku/view_model/view_model.dart';
 import 'package:provider/provider.dart';
-import 'pages/signup_page.dart';
 import 'package:camera/camera.dart';
 
 // Global variable to store available cameras
@@ -45,21 +44,20 @@ class MyApp extends StatelessWidget {
       initialRoute: "/map",
       routes: {
         "/dashboard": (context) => const MainNavigationPage(),
-        "/signup": (context) => SignUpPage(),
-        "/login": (context) => LoginPage(),
+        "/signup": (context) => const SignUpPage(),
+        "/login": (context) => const LoginPage(),
         "/camera": (context) => CameraPage(
               camera: cameras.first,
             ),
         "/history": (context) => PhotoHistoryPage(),
         "/map": (context) => const MapPage(),
-        "/tes": (context) => tes()
       },
     );
   }
 }
 
 class MainNavigationPage extends StatefulWidget {
-  const MainNavigationPage({Key? key}) : super(key: key);
+  const MainNavigationPage({super.key});
 
   @override
   State<MainNavigationPage> createState() => _MainNavigationPageState();
