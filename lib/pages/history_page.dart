@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+part of 'pages.dart';
 
 class PhotoHistoryPage extends StatelessWidget {
   final List<Map<String, String>> photoHistory = [
@@ -70,8 +70,7 @@ class PhotoHistoryPage extends StatelessWidget {
                   // Navigasi ke detail halaman jika diperlukan
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                          "Lihat detail untuk foto pada ${historyItem['date']}"),
+                      content: Text("Lihat detail untuk foto pada ${historyItem['date']}"),
                     ),
                   );
                 },

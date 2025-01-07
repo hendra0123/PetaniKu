@@ -1,11 +1,4 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
-import 'package:permission_handler/permission_handler.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+part of 'pages.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -15,19 +8,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  List<String> selectedDays = [];
-  List<Timer> _timers = [];
-  int selectedHour = 9;
-  int selectedMinute = 0;
-  bool isAlarmEnabled = false;
-  Duration remainingTime = Duration.zero;
-  List<DateTime> targetDates = [];
-  int indexTargetDates = 0;
-  var message = 'Please try to functions below.';
-  String _displayText = '';
-  int _charIndex = 0;
-  String _firstMessage = 'Selamat Pagi, Guest';
-  final String _secondMessage = 'Semangat Hari Ini!';
   final List<String> days = [
     'Senin',
     'Selasa',
@@ -37,10 +17,26 @@ class _DashboardPageState extends State<DashboardPage> {
     'Sabtu',
     'Minggu'
   ];
-  bool _isAnimationComplete = false;
-
+  final String _secondMessage = 'Semangat Hari Ini!';
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+
+  List<String> selectedDays = [];
+  List<DateTime> targetDates = [];
+  List<Timer> _timers = [];
+  bool isAlarmEnabled = false;
+  // bool _isTyping = true;
+  int _charIndex = 0;
+  int selectedHour = 9;
+  int selectedMinute = 0;
+  int indexTargetDates = 0;
+  String message = 'Please try to functions below.';
+  String _displayText = '';
+  // bool _isTyping = true;
+  String _firstMessage = '';
+
+  bool _isAnimationComplete = false;
+  late UserViewModel userViewModel;
 
   Future<void> requestNotificationPermission() async {
     var status = await Permission.notification.status;
@@ -88,6 +84,14 @@ class _DashboardPageState extends State<DashboardPage> {
         );
       },
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    userViewModel = Provider.of<UserViewModel>(context);
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => userViewModel.getUserData());
   }
 
   @override
@@ -463,140 +467,147 @@ class _DashboardPageState extends State<DashboardPage> {
         backgroundColor: Colors.grey.shade300,
         foregroundColor: Colors.black,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Pengecekan Lahan',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height * 0.15,
-                  margin: const EdgeInsets.all(8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2), // Efek bayangan
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.add_circle,
-                    size: 50,
-                  )),
-              const SizedBox(height: 10),
-              const Text(
-                'Hasil Panen',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              LineChartSample2(),
-              const Text(
-                'Penghematan Pupuk',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              LineChartSample2(),
-              const Text(
-                'Jadwal Pengecekan Tanaman',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap:
-                    showAlarmSettingsDialog, // Klik seluruh widget untuk mengatur waktu
-                child: Container(
-                  margin: const EdgeInsets.all(8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2), // Efek bayangan
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Bagian Waktu
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}', // Menampilkan waktu terpilih
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            sortedDays.isEmpty
-                                ? 'Tekan untuk memilih hari'
-                                : sortedDays.join(', '),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                      ),
+      body: Expanded(
+        child: Consumer<UserViewModel>(builder: (_, userViewModel, __) {
+          if (userViewModel.status == Status.loading) {
+            return const Center(
+                child: CircularProgressIndicator(color: Color(0xFF729762)));
+          }
 
-                      // Toggle Switch
-                      Switch(
-                        value: isAlarmEnabled,
-                        onChanged: (value) async {
-                          requestNotificationPermission();
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pengecekan Lahan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.of(context).size.height * 0.15,
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: const Offset(0, 2), // Efek bayangan
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.add_circle,
+                      size: 50,
+                    )),
+                const SizedBox(height: 10),
+                const Text(
+                  'Hasil Panen',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                LineChartSample2(),
+                const Text(
+                  'Penghematan Pupuk',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                LineChartSample2(),
+                const Text(
+                  'Jadwal Pengecekan Tanaman',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap:
+                      showAlarmSettingsDialog, // Klik seluruh widget untuk mengatur waktu
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: const Offset(0, 2), // Efek bayangan
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Bagian Waktu
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}', // Menampilkan waktu terpilih
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              sortedDays.isEmpty
+                                  ? 'Tekan untuk memilih hari'
+                                  : sortedDays.join(', '),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                        ),
 
-                          if (selectedDays.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Pilih minimal satu hari untuk mengaktifkan alarm.'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          setState(() {
-                            isAlarmEnabled = value;
-                          });
-                          if (isAlarmEnabled) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Alarm diatur pada ${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} untuk hari ${selectedDays.isEmpty ? 'tidak ada hari' : selectedDays.join(', ')}'),
-                              ),
-                            );
-                          }
-                        },
-                        activeColor: Colors.green, // Warna toggle aktif
-                      ),
-                    ],
+                        // Toggle Switch
+                        Switch(
+                          value: isAlarmEnabled,
+                          onChanged: (value) async {
+                            requestNotificationPermission();
+
+                            if (selectedDays.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Pilih minimal satu hari untuk mengaktifkan alarm.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+                            setState(() {
+                              isAlarmEnabled = value;
+                            });
+                            if (isAlarmEnabled) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Alarm diatur pada ${selectedHour.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')} untuk hari ${selectedDays.isEmpty ? 'tidak ada hari' : selectedDays.join(', ')}'),
+                                ),
+                              );
+                            }
+                          },
+                          activeColor: Colors.green, // Warna toggle aktif
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }

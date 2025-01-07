@@ -1,13 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
-
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:get_phone_number/get_phone_number.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:http/http.dart' as http;
-import 'package:petaniku/shared/shared.dart';
+part of 'pages.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,11 +10,13 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  String url = "https://dmlj3k21-5000.asse.devtunnels.ms/user/login";
   final TextEditingController _phoneController = TextEditingController();
-  bool? isChecked = false;
-  var message = 'Please try to functions below.';
+
+  String message = 'Please try to functions below.';
   String? simNumber;
+  bool? isChecked = false;
+
+  late UserViewModel userViewModel;
 
   Future<void> requestPhoneCallPermission() async {
     final status = await Permission.phone.status;
@@ -37,9 +31,7 @@ class _LoginPageState extends State<LoginPage> {
     if (await Permission.phone.isGranted) {
       try {
         String result = await GetPhoneNumber().getPhoneNumber();
-        setState(() {
-          simNumber = result;
-        });
+        setState(() => simNumber = result);
       } catch (e) {
         setState(() => message = e.toString());
       }
@@ -54,22 +46,13 @@ class _LoginPageState extends State<LoginPage> {
       final enteredPhoneNumber = _phoneController.text.trim();
 
       if (simNumber == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nomor telepon SIM tidak tersedia.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showSnackBar('Nomor telepon SIM tidak tersedia.', Colors.red);
         return;
       }
-      if (enteredPhoneNumber != simNumber) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      if (enteredPhoneNumber != simNumber && simNumber!.isNotEmpty) {
+        _showSnackBar(
+            'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.',
+            Colors.red);
         return;
       }
       fetchLogin();
@@ -79,28 +62,24 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> fetchLogin() async {
-    dynamic response = await http.post(Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode({'phone': _phoneController.text}));
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      AppConstant.authentication = json['token'];
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(jsonDecode(response.body)['pesan'])),
-      );
+    try {
+      String message = await userViewModel.postLogin(_phoneController.text);
+      _showSnackBar(message, null);
 
       Navigator.of(context)
           .pushNamedAndRemoveUntil("/dashboard", (route) => false);
-    } else if (response.statusCode == 400) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(jsonDecode(response.body)['pesan']),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } catch (e) {
+      _showSnackBar(e.toString(), Colors.red);
     }
+  }
+
+  void _showSnackBar(String message, Color? color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+      ),
+    );
   }
 
   void _showPermissionDialog() {
@@ -136,158 +115,189 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    userViewModel = Provider.of<UserViewModel>(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(children: [
-            Text('Masuk',
-                style: GoogleFonts.poppins(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: const Color.fromRGBO(3, 23, 73, 1))),
-            CarouselSlider(
-              items: [
-                Container(
-                  margin: const EdgeInsets.all(6.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.0),
-                    image: const DecorationImage(
-                      image: AssetImage("assets/images/pdi3.jpeg"),
-                      fit: BoxFit.cover,
-                    ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: _buildFormContent(),
                   ),
                 ),
-                Container(
-                  margin: const EdgeInsets.all(6.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.0),
-                    image: const DecorationImage(
-                      image: AssetImage("assets/images/pdi2.jpeg"),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.all(6.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.0),
-                    image: const DecorationImage(
-                      image: AssetImage("assets/images/pdi1.jpeg"),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
+                _buildLoadingOverlay(),
               ],
-              options: CarouselOptions(
-                height: 180.0,
-                enlargeCenterPage: true,
-                autoPlay: true,
-                aspectRatio: 16 / 9,
-                autoPlayCurve: Curves.fastOutSlowIn,
-                enableInfiniteScroll: true,
-                autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                viewportFraction: 0.8,
-              ),
             ),
-            const SizedBox(height: 16.0),
-            Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextFormField(
-                    cursorColor: const Color.fromRGBO(8, 35, 103, 1),
-                    controller: _phoneController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nomor Telepon',
-                      labelStyle:
-                          TextStyle(color: Color.fromRGBO(8, 35, 103, 1)),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                          borderSide: BorderSide(
-                              color: Color.fromRGBO(8, 35, 103, 1),
-                              width: 1.5)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                          borderSide: BorderSide(
-                              color: Color.fromRGBO(3, 23, 73, 1), width: 1.5)),
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Mohon masukkan nomor telepon anda';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16.0),
-                  const SizedBox(height: 16.0),
-                  SizedBox(
-                    width: MediaQuery.sizeOf(context).width,
-                    height: MediaQuery.sizeOf(context).height * 0.06,
-                    child: ElevatedButton(
-                      style: ButtonStyle(
-                          shape:
-                              WidgetStateProperty.all<RoundedRectangleBorder>(
-                                  RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18))),
-                          backgroundColor: const WidgetStatePropertyAll(
-                              Color.fromRGBO(3, 23, 73, 1))),
-                      onPressed: _validateAndSubmit,
-                      child: const Text(
-                        'Masuk',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16.0),
-                  const Row(children: <Widget>[
-                    Expanded(child: Divider()),
-                    SizedBox(
-                      width: 16,
-                    ),
-                    Text("atau"),
-                    SizedBox(
-                      width: 16,
-                    ),
-                    Expanded(child: Divider()),
-                  ]),
-                  const SizedBox(height: 16.0),
-                  SizedBox(
-                    width: MediaQuery.sizeOf(context).width,
-                    height: MediaQuery.sizeOf(context).height * 0.06,
-                    child: ElevatedButton(
-                      style: ButtonStyle(
-                          backgroundColor:
-                              const WidgetStatePropertyAll(Colors.white),
-                          shape:
-                              WidgetStateProperty.all<RoundedRectangleBorder>(
-                                  RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18.0),
-                                      side: const BorderSide(
-                                          color:
-                                              Color.fromRGBO(3, 23, 73, 1))))),
-                      onPressed: () {
-                        setState(() {
-                          Navigator.of(context).pushNamedAndRemoveUntil(
-                              "/signup", ((route) => false));
-                        });
-                      },
-                      child: const Text(
-                        'Daftar',
-                        style: TextStyle(color: Color.fromRGBO(3, 23, 73, 1)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormContent() {
+    return Column(
+      children: [
+        const Text(
+          'Masuk',
+          style: TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF031749),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildCarousel(),
+        const SizedBox(height: 16),
+        _buildForm(),
+      ],
+    );
+  }
+
+  Widget _buildCarousel() {
+    return CarouselSlider(
+      items: List.generate(3, (index) {
+        return Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            image: DecorationImage(
+              image: AssetImage("assets/images/pdi${3 - index}.jpeg"),
+              fit: BoxFit.cover,
             ),
+          ),
+        );
+      }),
+      options: CarouselOptions(
+        height: 180,
+        enlargeCenterPage: true,
+        autoPlay: true,
+        aspectRatio: 16 / 9,
+        autoPlayCurve: Curves.fastOutSlowIn,
+        enableInfiniteScroll: true,
+        autoPlayAnimationDuration: const Duration(milliseconds: 800),
+        viewportFraction: 0.8,
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextFormField(
+            cursorColor: const Color(0xFF082367),
+            controller: _phoneController,
+            decoration: _inputDecoration('Nomor Telepon'),
+            keyboardType: TextInputType.number,
+            validator: (value) => value == null || value.isEmpty
+                ? 'Mohon masukkan nomor telepon anda'
+                : null,
+          ),
+          const SizedBox(height: 32),
+          _buildButton(
+            text: 'Masuk',
+            backgroundColor: const Color(0xFF729762),
+            textColor: Colors.white,
+            onPressed: _validateAndSubmit,
+          ),
+          const SizedBox(height: 16),
+          const Row(children: <Widget>[
+            Expanded(child: Divider()),
+            SizedBox(
+              width: 16,
+            ),
+            Text("atau"),
+            SizedBox(
+              width: 16,
+            ),
+            Expanded(child: Divider()),
           ]),
+          const SizedBox(height: 16),
+          _buildButton(
+            text: 'Daftar',
+            backgroundColor: Colors.white,
+            textColor: const Color(0xFF729762),
+            borderColor: const Color(0xFF729762),
+            onPressed: () {
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil("/signup", (route) => false);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButton({
+    required String text,
+    required Color backgroundColor,
+    required Color textColor,
+    Color? borderColor,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 60),
+        backgroundColor: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: borderColor != null
+              ? BorderSide(color: borderColor, width: 1.5)
+              : BorderSide.none,
         ),
       ),
+      onPressed: onPressed,
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String labelText) {
+    return InputDecoration(
+      labelText: labelText,
+      labelStyle: const TextStyle(color: Color(0xFF082367)),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF082367), width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF031749), width: 1.5),
+      ),
+      border: const OutlineInputBorder(),
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Consumer<UserViewModel>(
+      builder: (_, userViewModel, __) {
+        if (userViewModel.status == Status.loading) {
+          return Container(
+            color: Colors.black.withOpacity(0.5),
+            child: const Center(
+              child: CircularProgressIndicator(color: Color(0xFF729762)),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 }
