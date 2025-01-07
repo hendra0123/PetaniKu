@@ -51,11 +51,14 @@ class _LoginPageState extends State<LoginPage> {
       }
       if (enteredPhoneNumber != simNumber && simNumber!.isNotEmpty) {
         _showSnackBar(
-            'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.', Colors.red);
+            'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.',
+            Colors.red);
         return;
       }
       fetchLogin();
     }
+
+    print(simNumber);
   }
 
   Future<void> fetchLogin() async {
@@ -63,7 +66,8 @@ class _LoginPageState extends State<LoginPage> {
       String message = await userViewModel.postLogin(_phoneController.text);
       _showSnackBar(message, null);
 
-      Navigator.of(context).pushNamedAndRemoveUntil("/dashboard", (route) => false);
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil("/dashboard", (route) => false);
     } catch (e) {
       _showSnackBar(e.toString(), Colors.red);
     }
@@ -196,8 +200,9 @@ class _LoginPageState extends State<LoginPage> {
             controller: _phoneController,
             decoration: _inputDecoration('Nomor Telepon'),
             keyboardType: TextInputType.number,
-            validator: (value) =>
-                value == null || value.isEmpty ? 'Mohon masukkan nomor telepon anda' : null,
+            validator: (value) => value == null || value.isEmpty
+                ? 'Mohon masukkan nomor telepon anda'
+                : null,
           ),
           const SizedBox(height: 32),
           _buildButton(
@@ -225,7 +230,8 @@ class _LoginPageState extends State<LoginPage> {
             textColor: const Color(0xFF729762),
             borderColor: const Color(0xFF729762),
             onPressed: () {
-              Navigator.of(context).pushNamedAndRemoveUntil("/signup", (route) => false);
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil("/signup", (route) => false);
             },
           ),
         ],
@@ -246,7 +252,9 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: backgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: borderColor != null ? BorderSide(color: borderColor, width: 1.5) : BorderSide.none,
+          side: borderColor != null
+              ? BorderSide(color: borderColor, width: 1.5)
+              : BorderSide.none,
         ),
       ),
       onPressed: onPressed,

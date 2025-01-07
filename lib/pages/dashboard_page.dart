@@ -16,8 +16,8 @@ class _DashboardPageState extends State<DashboardPage> {
   String message = 'Please try to functions below.';
   String _displayText = '';
   String _firstMessage = '';
-  Duration remainingTime = Duration.zero;
 
+  bool _isAnimationComplete = false;
   late UserViewModel userViewModel;
   late Future<LatLng> initialPosition;
 
@@ -42,7 +42,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void dispose() {
-    // Batalkan semua timer
+    // Hentikan semua timer untuk mencegah memory leak
     for (var timer in _timers) {
       timer.cancel();
     }
@@ -77,6 +77,20 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _markAnimationAsShown() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isAnimationShown', true);
+  }
+
+  void _startWelcomeAnimation() {
+    _startTyping(_firstMessage, onComplete: () {
+      Future.delayed(const Duration(seconds: 1), () {
+        _startDeleting(onComplete: () {
+          _startTyping(_secondMessage, onComplete: () {
+            setState(() {
+              _isAnimationComplete = true; // Tandai animasi selesai
+            });
+          });
+        });
+      });
+    });
   }
 
   void _startTyping(String message, {VoidCallback? onComplete}) {
