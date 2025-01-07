@@ -15,7 +15,7 @@ class _DashboardPageState extends State<DashboardPage> {
   int _charIndex = 0;
   String message = 'Please try to functions below.';
   String _displayText = '';
-  String _firstMessage = '';
+  late String _firstMessage = '';
 
   bool _isAnimationComplete = false;
   late UserViewModel userViewModel;
@@ -24,20 +24,31 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
     userViewModel = Provider.of<UserViewModel>(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       userViewModel.getUserData();
     });
     initialPosition = userViewModel.riceField != null
-        ? Future.value(GeoUtil.findPolygonCenter(userViewModel.riceField!.coordinates!))
+        ? Future.value(
+            GeoUtil.findPolygonCenter(userViewModel.riceField!.coordinates!))
         : GeoUtil.findCurrentPosition();
   }
 
   @override
   void initState() {
     super.initState();
-    _firstMessage = 'Selamat Pagi, Guest';
-    _checkAnimationStatus();
+    userViewModel = Provider.of<UserViewModel>(context, listen: false);
+    _firstMessage = 'Selamat Pagi, ${userViewModel.user?.name ?? 'Guest'}';
+    if (_isAnimationComplete) {
+      // Jika animasi sudah selesai, langsung tampilkan pesan kedua
+      setState(() {
+        _displayText = _secondMessage;
+      });
+    } else {
+      // Jika belum, mulai animasi
+      _startWelcomeAnimation();
+    }
   }
 
   @override
@@ -138,7 +149,8 @@ class _DashboardPageState extends State<DashboardPage> {
         centerTitle: true,
         title: Text(
           _displayText,
-          style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(
+              fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.grey.shade300,
         foregroundColor: Colors.black,
@@ -148,24 +160,27 @@ class _DashboardPageState extends State<DashboardPage> {
           Expanded(
             child: Consumer<UserViewModel>(builder: (_, userViewModel, __) {
               if (userViewModel.status == Status.loading) {
-                return const Center(child: CircularProgressIndicator(color: Color(0xFF729762)));
+                return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF729762)));
               }
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Pengecekan Lahan',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 10),
                     // Container(
                     //     width: MediaQuery.of(context).size.width,
                     //     height: MediaQuery.of(context).size.height * 0.15,
                     //     margin: const EdgeInsets.all(8),
-                    //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    //     padding: const EdgeInsets.symmetric(
+                    //         horizontal: 16, vertical: 16),
                     //     decoration: BoxDecoration(
                     //       color: Colors.white,
                     //       borderRadius: BorderRadius.circular(16),
@@ -188,13 +203,16 @@ class _DashboardPageState extends State<DashboardPage> {
                       child: FutureBuilder<LatLng>(
                           future: initialPosition,
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState != ConnectionState.done) {
-                              return const Center(child: CircularProgressIndicator());
+                            if (snapshot.connectionState !=
+                                ConnectionState.done) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
                             }
 
                             return FlutterMap(
                               options: MapOptions(
-                                initialCenter: snapshot.data ?? AppConstant.defaultInitialPosition,
+                                initialCenter: snapshot.data ??
+                                    AppConstant.defaultInitialPosition,
                                 initialZoom: initialZoom,
                                 maxZoom: initialZoom + 3,
                                 minZoom: initialZoom - 3,
@@ -202,7 +220,9 @@ class _DashboardPageState extends State<DashboardPage> {
                               children: [
                                 AppConstant.openStreeMapTileLayer,
                                 if (userViewModel.riceField != null)
-                                  buildPolygonLayer(userViewModel.riceField!.coordinates ?? []),
+                                  buildPolygonLayer(
+                                      userViewModel.riceField!.coordinates ??
+                                          []),
                               ],
                             );
                           }),
@@ -210,17 +230,20 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 10),
                     const Text(
                       'Hasil Panen',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const LineChartSample(),
                     const Text(
                       'Penghematan Pupuk',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const LineChartSample(),
                     const Text(
                       'Jadwal Pengecekan Tanaman',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 10),
                     const Alarm(),

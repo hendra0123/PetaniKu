@@ -57,8 +57,6 @@ class _LoginPageState extends State<LoginPage> {
       }
       fetchLogin();
     }
-
-    print(simNumber);
   }
 
   Future<void> fetchLogin() async {
