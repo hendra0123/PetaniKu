@@ -32,34 +32,6 @@ class _AlarmState extends State<Alarm> {
     tz.setLocalLocation(tz.getLocation('Asia/Makassar')); // Atur ke zona WITA
   }
 
-  Future<void> testNotification() async {
-    const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
-      'test_channel_id',
-      'Test Notifications',
-      channelDescription: 'Notifikasi untuk pengujian',
-      importance: Importance.high,
-      priority: Priority.high,
-      channelShowBadge: true,
-    );
-
-    const NotificationDetails notificationDetails =
-        NotificationDetails(android: androidNotificationDetails);
-
-    await flutterLocalNotificationsPlugin.show(
-      0, // ID notifikasi
-      'Test Notification',
-      'Notifikasi ini adalah tes apakah berjalan dengan baik!',
-      notificationDetails,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Notifikasi berhasil dikirim!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
   // Fungsi untuk membatalkan semua notifikasi
   Future<void> cancelNotifications() async {
     await flutterLocalNotificationsPlugin.cancelAll();
