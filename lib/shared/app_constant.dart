@@ -5,7 +5,7 @@ class AppConstant {
 
   static const LatLng defaultInitialPosition = LatLng(-5.149333, 119.395184);
 
-  static const String baseUrl = "https://b29q2kft-5000.asse.devtunnels.ms/";
+  static const String baseUrl = "https://dmlj3k21-5000.asse.devtunnels.ms/";
 
   static String authentication = "";
 
@@ -13,7 +13,10 @@ class AppConstant {
       TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png");
 
   static TileLayer get mapTilerSatelliteTileLayer => TileLayer(
-        urlTemplate: "https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key={apiKey}",
-        additionalOptions: <String, String>{"apiKey": dotenv.env['MAPTILER_API_KEY'] ?? ""},
+        urlTemplate:
+            "https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key={apiKey}",
+        additionalOptions: <String, String>{
+          "apiKey": dotenv.env['MAPTILER_API_KEY'] ?? ""
+        },
       );
 }

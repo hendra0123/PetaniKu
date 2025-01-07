@@ -65,7 +65,8 @@ class _LoginPageState extends State<LoginPage> {
       if (enteredPhoneNumber != simNumber) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.'),
+            content: Text(
+                'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -73,6 +74,8 @@ class _LoginPageState extends State<LoginPage> {
       }
       fetchLogin();
     }
+
+    print(simNumber);
   }
 
   Future<void> fetchLogin() async {
@@ -88,7 +91,8 @@ class _LoginPageState extends State<LoginPage> {
         SnackBar(content: Text(jsonDecode(response.body)['pesan'])),
       );
 
-      Navigator.of(context).pushNamedAndRemoveUntil("/dashboard", (route) => false);
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil("/dashboard", (route) => false);
     } else if (response.statusCode == 400) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -198,13 +202,17 @@ class _LoginPageState extends State<LoginPage> {
                     controller: _phoneController,
                     decoration: const InputDecoration(
                       labelText: 'Nomor Telepon',
-                      labelStyle: TextStyle(color: Color.fromRGBO(8, 35, 103, 1)),
+                      labelStyle:
+                          TextStyle(color: Color.fromRGBO(8, 35, 103, 1)),
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(8)),
-                          borderSide: BorderSide(color: Color.fromRGBO(8, 35, 103, 1), width: 1.5)),
+                          borderSide: BorderSide(
+                              color: Color.fromRGBO(8, 35, 103, 1),
+                              width: 1.5)),
                       enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(8)),
-                          borderSide: BorderSide(color: Color.fromRGBO(3, 23, 73, 1), width: 1.5)),
+                          borderSide: BorderSide(
+                              color: Color.fromRGBO(3, 23, 73, 1), width: 1.5)),
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
@@ -222,10 +230,12 @@ class _LoginPageState extends State<LoginPage> {
                     height: MediaQuery.sizeOf(context).height * 0.06,
                     child: ElevatedButton(
                       style: ButtonStyle(
-                          shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-                          backgroundColor:
-                              const WidgetStatePropertyAll(Color.fromRGBO(3, 23, 73, 1))),
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18))),
+                          backgroundColor: const WidgetStatePropertyAll(
+                              Color.fromRGBO(3, 23, 73, 1))),
                       onPressed: _validateAndSubmit,
                       child: const Text(
                         'Masuk',
@@ -251,15 +261,19 @@ class _LoginPageState extends State<LoginPage> {
                     height: MediaQuery.sizeOf(context).height * 0.06,
                     child: ElevatedButton(
                       style: ButtonStyle(
-                          backgroundColor: const WidgetStatePropertyAll(Colors.white),
-                          shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                              RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18.0),
-                                  side: const BorderSide(color: Color.fromRGBO(3, 23, 73, 1))))),
+                          backgroundColor:
+                              const WidgetStatePropertyAll(Colors.white),
+                          shape:
+                              WidgetStateProperty.all<RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18.0),
+                                      side: const BorderSide(
+                                          color:
+                                              Color.fromRGBO(3, 23, 73, 1))))),
                       onPressed: () {
                         setState(() {
-                          Navigator.of(context)
-                              .pushNamedAndRemoveUntil("/signup", ((route) => false));
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                              "/signup", ((route) => false));
                         });
                       },
                       child: const Text(

@@ -26,8 +26,7 @@ class _DashboardPageState extends State<DashboardPage> {
   var message = 'Please try to functions below.';
   String _displayText = '';
   int _charIndex = 0;
-  // bool _isTyping = true;
-  String _firstMessage = '';
+  String _firstMessage = 'Selamat Pagi, Guest';
   final String _secondMessage = 'Semangat Hari Ini!';
   final List<String> days = [
     'Senin',
@@ -38,25 +37,23 @@ class _DashboardPageState extends State<DashboardPage> {
     'Sabtu',
     'Minggu'
   ];
+  bool _isAnimationComplete = false;
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
   Future<void> requestNotificationPermission() async {
-    final status = await Permission.notification.status;
+    var status = await Permission.notification.status;
     if (status.isDenied || status.isRestricted) {
-      await Permission.notification.request();
+      status = await Permission.notification.request();
     }
-    print('Notification Permission: ${status.isGranted}');
 
     if (status.isPermanentlyDenied) {
       _showPermissionDialog();
       return;
     }
 
-    if (status.isGranted) {
-      return;
-    } else {
+    if (!status.isGranted) {
       _showPermissionDialog();
     }
   }
@@ -97,13 +94,20 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     initializeNotifications();
-    _firstMessage = 'Selamat Pagi, Guest';
-    _checkAnimationStatus();
+    if (_isAnimationComplete) {
+      // Jika animasi sudah selesai, langsung tampilkan pesan kedua
+      setState(() {
+        _displayText = _secondMessage;
+      });
+    } else {
+      // Jika belum, mulai animasi
+      _startWelcomeAnimation();
+    }
   }
 
   @override
   void dispose() {
-    // Batalkan semua timer
+    // Hentikan semua timer untuk mencegah memory leak
     for (var timer in _timers) {
       timer.cancel();
     }
@@ -111,33 +115,18 @@ class _DashboardPageState extends State<DashboardPage> {
     super.dispose();
   }
 
-  Future<void> _checkAnimationStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isAnimationShown = prefs.getBool('isAnimationShown') ?? false;
-
-    if (isAnimationShown) {
-      // Jika animasi sudah selesai, langsung tampilkan pesan kedua
-      setState(() {
-        _displayText = _secondMessage;
-      });
-    } else {
-      // Jika belum, mulai animasi
-      _startTyping(_firstMessage, onComplete: () {
-        Future.delayed(const Duration(seconds: 1), () {
-          _startDeleting(onComplete: () {
-            _startTyping(_secondMessage, onComplete: () {
-              _markAnimationAsShown(); // Tandai animasi selesai
+  void _startWelcomeAnimation() {
+    _startTyping(_firstMessage, onComplete: () {
+      Future.delayed(const Duration(seconds: 1), () {
+        _startDeleting(onComplete: () {
+          _startTyping(_secondMessage, onComplete: () {
+            setState(() {
+              _isAnimationComplete = true; // Tandai animasi selesai
             });
           });
         });
       });
-    }
-  }
-
-  // Tandai animasi telah selesai
-  Future<void> _markAnimationAsShown() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isAnimationShown', true);
+    });
   }
 
   void _startTyping(String message, {VoidCallback? onComplete}) {
