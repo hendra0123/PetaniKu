@@ -7,7 +7,8 @@ class AppConstant {
 
   static const String baseUrl = "https://b29q2kft-5000.asse.devtunnels.ms/";
 
-  static String authentication = "";
+  static String authentication =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiUExXdmtoN1h4NW1ITFl2WEhPZFUiLCJleHAiOjE3MzYyOTczNzgsImlhdCI6MTczNjIxMDk3OH0.GlLDXj956Sh2CmtfJFC7WQkeTnepkAKAm5PxVroCgUQ";
 
   static TileLayer get openStreeMapTileLayer =>
       TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png");
