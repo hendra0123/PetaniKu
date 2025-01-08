@@ -32,8 +32,16 @@ class MyApp extends StatelessWidget {
       title: 'PetaniKu',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF729762),
+          foregroundColor: Colors.white,
+          titleTextStyle: GoogleFonts.poppins(
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         fontFamily: GoogleFonts.poppins().fontFamily,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
       ),
       initialRoute: "/dashboard",
@@ -78,28 +86,36 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            activeIcon: Icon(Icons.home),
-            icon: Icon(Icons.home_outlined),
-            label: 'Beranda',
-          ),
-          BottomNavigationBarItem(
-            activeIcon: Icon(Icons.camera_enhance),
-            icon: Icon(Icons.camera_enhance_outlined),
-            label: 'Kamera',
-          ),
-          BottomNavigationBarItem(
-            activeIcon: Icon(Icons.history_toggle_off),
-            icon: Icon(Icons.history_toggle_off_outlined),
-            label: 'Riwayat',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: <BoxShadow>[
+            BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20),
+          ],
+        ),
+        child: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              activeIcon: Icon(Icons.home),
+              icon: Icon(Icons.home_outlined),
+              label: 'Beranda',
+            ),
+            BottomNavigationBarItem(
+              activeIcon: Icon(Icons.camera_enhance),
+              icon: Icon(Icons.camera_enhance_outlined),
+              label: 'Kamera',
+            ),
+            BottomNavigationBarItem(
+              activeIcon: Icon(Icons.history_toggle_off),
+              icon: Icon(Icons.history_toggle_off_outlined),
+              label: 'Riwayat',
+            ),
+          ],
+          backgroundColor: Colors.white,
+          currentIndex: _selectedIndex,
+          selectedItemColor: const Color(0xFF729762),
+          unselectedItemColor: Colors.grey,
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }
