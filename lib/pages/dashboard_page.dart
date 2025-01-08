@@ -129,7 +129,6 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             buildMap(),
             const SizedBox(height: 16),
-            // buildActionButton(),
             MainButton(
               onPressed: () {
                 Navigator.of(context).pushNamed("/map");
