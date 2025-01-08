@@ -61,35 +61,6 @@ class _DashboardPageState extends State<DashboardPage> {
     super.dispose();
   }
 
-  Future<void> _checkAnimationStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isAnimationShown = prefs.getBool('isAnimationShown') ?? false;
-
-    if (isAnimationShown) {
-      // Jika animasi sudah selesai, langsung tampilkan pesan kedua
-      setState(() {
-        _displayText = _secondMessage;
-      });
-    } else {
-      // Jika belum, mulai animasi
-      _startTyping(_firstMessage, onComplete: () {
-        Future.delayed(const Duration(seconds: 1), () {
-          _startDeleting(onComplete: () {
-            _startTyping(_secondMessage, onComplete: () {
-              _markAnimationAsShown(); // Tandai animasi selesai
-            });
-          });
-        });
-      });
-    }
-  }
-
-  // Tandai animasi telah selesai
-  Future<void> _markAnimationAsShown() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isAnimationShown', true);
-  }
-
   void _startWelcomeAnimation() {
     _startTyping(_firstMessage, onComplete: () {
       Future.delayed(const Duration(seconds: 1), () {
@@ -175,28 +146,6 @@ class _DashboardPageState extends State<DashboardPage> {
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 10),
-                    // Container(
-                    //     width: MediaQuery.of(context).size.width,
-                    //     height: MediaQuery.of(context).size.height * 0.15,
-                    //     margin: const EdgeInsets.all(8),
-                    //     padding: const EdgeInsets.symmetric(
-                    //         horizontal: 16, vertical: 16),
-                    //     decoration: BoxDecoration(
-                    //       color: Colors.white,
-                    //       borderRadius: BorderRadius.circular(16),
-                    //       boxShadow: [
-                    //         BoxShadow(
-                    //           color: Colors.grey.withOpacity(0.2),
-                    //           spreadRadius: 1,
-                    //           blurRadius: 5,
-                    //           offset: const Offset(0, 2), // Efek bayangan
-                    //         ),
-                    //       ],
-                    //     ),
-                    //     child: Icon(
-                    //       Icons.add_circle,
-                    //       size: 50,
-                    //     )),
                     SizedBox(
                       width: double.infinity,
                       height: MediaQuery.of(context).size.height * 0.3,
