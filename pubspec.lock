@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  buttons_panel:
+    dependency: "direct main"
+    description:
+      name: buttons_panel
+      sha256: "5d37c9fd2192febb2a6d4b51db410f11a36988823fc72f26d649c7e28239e641"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   camera:
     dependency: "direct main"
     description:

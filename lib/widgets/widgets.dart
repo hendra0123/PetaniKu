@@ -7,3 +7,4 @@ import 'package:timezone/timezone.dart' as tz;
 
 part 'line_chart_sample.dart';
 part 'alarm.dart';
+part 'main_button.dart';

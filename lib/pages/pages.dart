@@ -16,7 +16,6 @@ import 'package:petaniku/shared/shared.dart';
 import 'package:petaniku/view_model/view_model.dart';
 import 'package:petaniku/widgets/widgets.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 part 'login_page.dart';

@@ -11,6 +11,7 @@ class UserViewModel extends ChangeNotifier {
 
   User? get user => _response.data;
   RiceField? get riceField => _response.data?.riceField;
+  Summary? get summary => _response.data?.summary;
   Status? get status => _response.status;
 
   void setApiResponse(ApiResponse<User> result) {

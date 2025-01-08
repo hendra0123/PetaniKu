@@ -134,6 +134,10 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Pemetaan Sawah"),
+        leading: const BackButton(),
+      ),
       body: Stack(children: [
         buildMap(),
         buildBottomAlignedInfo(),
@@ -258,19 +262,21 @@ class _MapPageState extends State<MapPage> {
   Widget buildMainButtons() {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
       if (currentRiceField != userViewModel.riceField) ...[
-        buildExpandedButton(
+        MainButton(
           onPressed: cancelFieldMapping,
           buttonColor: Colors.grey,
+          isExpanded: true,
           text: "Batal",
         ),
         const SizedBox(width: 16)
       ],
-      buildExpandedButton(
+      MainButton(
         onPressed:
             !isMapping && polygonErrorMsg.isEmpty && currentRiceField != userViewModel.riceField
                 ? saveRiceField
                 : fieldMapping,
         buttonColor: Color(polygonErrorMsg.isEmpty ? 0xFF729762 : 0xFFEBA000),
+        isExpanded: true,
         text: isMapping
             ? polygonErrorMsg.isNotEmpty
                 ? "Lanjutkan"
@@ -315,27 +321,5 @@ class _MapPageState extends State<MapPage> {
           fontSize: fontSize,
           color: color,
         ));
-  }
-
-  Widget buildExpandedButton({
-    required void Function()? onPressed,
-    required Color buttonColor,
-    required String text,
-  }) {
-    return Expanded(
-      child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(0, 60),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            backgroundColor: buttonColor,
-          ),
-          child: buildText(
-            text: text,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          )),
-    );
   }
 }
