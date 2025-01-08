@@ -20,7 +20,7 @@ class _LineChartSampleState extends State<LineChartSample> {
           aspectRatio: 1.70,
           child: Padding(
             padding: const EdgeInsets.only(
-              right: 18,
+              right: 12,
               left: 12,
               top: 24,
               bottom: 12,
@@ -59,14 +59,17 @@ class _LineChartSampleState extends State<LineChartSample> {
     );
     Widget text;
     switch (value.toInt()) {
-      case 2:
+      case 1:
         text = const Text('MAR', style: style);
         break;
-      case 5:
+      case 4:
         text = const Text('JUN', style: style);
         break;
-      case 8:
+      case 7:
         text = const Text('SEP', style: style);
+        break;
+      case 10:
+        text = const Text('DES', style: style);
         break;
       default:
         text = const Text('', style: style);
@@ -86,14 +89,14 @@ class _LineChartSampleState extends State<LineChartSample> {
     );
     String text;
     switch (value.toInt()) {
-      case 1:
-        text = '10K';
+      case 2:
+        text = '2 TON';
         break;
-      case 3:
-        text = '30k';
+      case 4:
+        text = '4 TON';
         break;
-      case 5:
-        text = '50k';
+      case 6:
+        text = '6 TON';
         break;
       default:
         return Container();
@@ -154,11 +157,11 @@ class _LineChartSampleState extends State<LineChartSample> {
       minX: 0,
       maxX: 11,
       minY: 0,
-      maxY: 6,
+      maxY: 8,
       lineBarsData: [
         LineChartBarData(
           spots: const [
-            FlSpot(0, 3),
+            FlSpot(0, 6),
             FlSpot(2.6, 2),
             FlSpot(4.9, 5),
             FlSpot(6.8, 3.1),
@@ -178,7 +181,9 @@ class _LineChartSampleState extends State<LineChartSample> {
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
-              colors: gradientColors.map((color) => color.withOpacity(0.3)).toList(),
+              colors: gradientColors
+                  .map((color) => color.withOpacity(0.3))
+                  .toList(),
             ),
           ),
         ),
@@ -254,8 +259,10 @@ class _LineChartSampleState extends State<LineChartSample> {
           isCurved: true,
           gradient: LinearGradient(
             colors: [
-              ColorTween(begin: gradientColors[0], end: gradientColors[1]).lerp(0.2)!,
-              ColorTween(begin: gradientColors[0], end: gradientColors[1]).lerp(0.2)!,
+              ColorTween(begin: gradientColors[0], end: gradientColors[1])
+                  .lerp(0.2)!,
+              ColorTween(begin: gradientColors[0], end: gradientColors[1])
+                  .lerp(0.2)!,
             ],
           ),
           barWidth: 5,
