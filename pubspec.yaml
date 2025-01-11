@@ -58,7 +58,6 @@ dependencies:
   http: ^1.2.2
   http_parser: ^4.0.2
   provider: ^6.1.2
-  buttons_panel: ^1.0.0
 
 dev_dependencies:
   flutter_test:
