@@ -43,6 +43,8 @@ class PolygonGenerator {
       ..._generateArc(LatLng(maxLat, minLng), 270, 360, bufferMeters),
     ];
 
+    if (boundaryPoints.last == boundaryPoints.first) boundaryPoints.removeLast();
+
     return _suthHodgClip(polygonPoints, boundaryPoints);
   }
 

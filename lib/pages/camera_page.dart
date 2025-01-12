@@ -3,7 +3,7 @@ part of 'pages.dart';
 class CameraPage extends StatefulWidget {
   final CameraDescription camera;
 
-  const CameraPage({Key? key, required this.camera}) : super(key: key);
+  const CameraPage({super.key, required this.camera});
 
   @override
   State<CameraPage> createState() => _CameraPageState();
@@ -12,7 +12,7 @@ class CameraPage extends StatefulWidget {
 class _CameraPageState extends State<CameraPage> {
   late CameraController _cameraController;
   late Future<void> _initializeControllerFuture;
-  List<XFile> _capturedImages = [];
+  final List<XFile> _capturedImages = [];
   bool _isInCameraMode = true;
 
   @override
@@ -232,7 +232,7 @@ class _CameraPageState extends State<CameraPage> {
 class FullScreenImageView extends StatelessWidget {
   final String imagePath;
 
-  const FullScreenImageView({Key? key, required this.imagePath}) : super(key: key);
+  const FullScreenImageView({super.key, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {

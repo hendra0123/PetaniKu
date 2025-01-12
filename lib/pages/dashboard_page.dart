@@ -27,7 +27,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     userViewModel = Provider.of<UserViewModel>(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      userViewModel.getUserData();
+      if (userViewModel.status != Status.error) userViewModel.getUserData();
     });
     initialPosition = userViewModel.riceField != null
         ? Future.value(GeoUtil.findPolygonCenter(userViewModel.riceField!.coordinates!))
@@ -124,6 +124,25 @@ class _DashboardPageState extends State<DashboardPage> {
           return const Center(child: CircularProgressIndicator(color: Color(0xFF729762)));
         }
 
+        if (userViewModel.status == Status.error) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildText(
+                  text: 'Terjadi kesalahan saat mengambil data',
+                  fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 8),
+                MainButton(
+                  onPressed: () => userViewModel.getUserData(),
+                  text: 'Coba Lagi',
+                ),
+              ],
+            ),
+          );
+        }
+
         return ListView(
           padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
           children: [
@@ -171,19 +190,70 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             children: [
               AppConstant.openStreeMapTileLayer,
-              if (userViewModel.riceField != null)
-                PolygonLayer(polygons: [
-                  Polygon(
-                    borderStrokeWidth: 5,
-                    points: userViewModel.riceField!.coordinates ?? [],
-                    borderColor: const Color(0xFF00AAFF),
-                    color: const Color(0xFFFF5252).withOpacity(0.2),
-                  )
-                ])
+              if (userViewModel.riceField != null && userViewModel.summary != null)
+                buildFieldPolygon(),
+              if (userViewModel.summary != null) buildFieldMarker(),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget buildFieldPolygon() {
+    final group = GeoUtil.groupRiceLeaves(userViewModel.summary!.images ?? []);
+    List<List<LatLng>> clusterCoordinatesList = [];
+    for (var list in group["clusters"]!) {
+      // Cast list to List<dynamic> explicitly
+      if (list is List<dynamic>) {
+        List<LatLng> clusterCoords = list.map((e) {
+          if (e is RiceLeaf) {
+            return e.coordinate as LatLng;
+          }
+          throw Exception("Invalid coordinate data");
+        }).toList();
+        clusterCoordinatesList.add(clusterCoords);
+      }
+    }
+    // print(clusterCoordinatesList);
+
+    List<List<LatLng>> clusterPolygons = [];
+    for (var clusterCoords in clusterCoordinatesList) {
+      final cluster = GeoUtil.generateRoundedBoxPolygon(
+          clusterCoords, 10, userViewModel.riceField!.coordinates ?? []);
+      clusterPolygons.add(cluster);
+    }
+
+    // print(clusterPolygons);
+
+    return PolygonLayer(
+      polygons: [
+        Polygon(
+          borderStrokeWidth: 5,
+          points: userViewModel.riceField!.coordinates ?? [],
+          borderColor: const Color(0xFF00AAFF),
+          color: const Color(0xFFFF5252).withOpacity(0.2),
+        ),
+        for (var polygon in clusterPolygons)
+          Polygon(
+            points: polygon,
+            color: const Color(0xFF00AAFF).withOpacity(0.2),
+          ),
+      ],
+    );
+  }
+
+  Widget buildFieldMarker() {
+    return MarkerLayer(
+      markers: [
+        for (var polygon in userViewModel.summary!.images!)
+          Marker(
+            point: polygon.coordinate!,
+            width: 80,
+            height: 80,
+            child: const Icon(Icons.circle),
+          )
+      ],
     );
   }
 

@@ -26,18 +26,21 @@ class _MapPageState extends State<MapPage> {
 
   void fieldMapping() async {
     if (isMapping && polygonErrorMsg.isEmpty) {
-      return setState(() => isMapping = false);
+      if (mounted) setState(() => isMapping = false);
+      return;
     }
 
-    setState(() {
-      isMapping = true;
-      showPolygon = false;
-      isCancelled = false;
-      polygonErrorMsg = "";
-      currentRiceField = RiceField(area: 0, coordinates: const [], createdTime: DateTime.now());
-    });
+    if (mounted) {
+      setState(() {
+        isMapping = true;
+        showPolygon = false;
+        isCancelled = false;
+        polygonErrorMsg = "";
+        currentRiceField = RiceField(area: 0, coordinates: const [], createdTime: DateTime.now());
+      });
+    }
 
-    while (isMapping) {
+    while (isMapping && mounted) {
       try {
         LatLng coordinate = await GeoUtil.findCurrentPosition();
 
@@ -47,23 +50,28 @@ class _MapPageState extends State<MapPage> {
           continue;
         }
 
-        setState(() {
-          if (GeoUtil.findDistanceBetween(previousPolylinePoints.last, coordinate) >= 10) {
-            previousPolylinePoints.add(coordinate);
-            currentPolylinePoints = [coordinate];
-          } else {
-            if (currentPolylinePoints.length == 2) {
-              currentPolylinePoints.removeLast();
+        if (mounted) {
+          setState(() {
+            if (GeoUtil.findDistanceBetween(previousPolylinePoints.last, coordinate) >= 10) {
+              previousPolylinePoints.add(coordinate);
+              currentPolylinePoints = [coordinate];
+            } else {
+              if (currentPolylinePoints.length == 2) {
+                currentPolylinePoints.removeLast();
+              }
+              currentPolylinePoints.add(coordinate);
             }
-            currentPolylinePoints.add(coordinate);
-          }
-        });
+          });
+        }
 
         await Future.delayed(const Duration(seconds: 1));
       } catch (e) {
-        return setState(() => polygonErrorMsg = e.toString());
+        if (mounted) setState(() => polygonErrorMsg = e.toString());
+        break;
       }
     }
+
+    if (!mounted) return;
 
     if (!isCancelled && previousPolylinePoints.isNotEmpty) {
       finalizeMapping();
@@ -127,6 +135,7 @@ class _MapPageState extends State<MapPage> {
 
   @override
   void dispose() {
+    isMapping = false;
     _followCurrentLocationStreamController.close();
     super.dispose();
   }

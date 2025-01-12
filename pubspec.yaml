@@ -45,8 +45,6 @@ dependencies:
   get_phone_number: ^3.0.10
   animated_text_kit: ^4.2.2
   shared_preferences: ^2.3.3
-  cloud_firestore: ^5.6.0
-  firebase_core: ^3.9.0
 
   flutter_map: ^7.0.2
   maps_toolkit: ^3.0.0
@@ -58,7 +56,6 @@ dependencies:
   http: ^1.2.2
   http_parser: ^4.0.2
   provider: ^6.1.2
-  buttons_panel: ^1.0.0
 
 dev_dependencies:
   flutter_test:

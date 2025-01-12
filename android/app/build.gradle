@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.petaniku"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "25.18937393"
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
         coreLibraryDesugaringEnabled true
