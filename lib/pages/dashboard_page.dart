@@ -9,7 +9,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final String _secondMessage = 'Semangat Hari Ini!';
-  final double initialZoom = AppConstant.defaultInitialZoom - 1;
+  final double initialZoom = AppConstant.defaultInitialZoom;
   final List<Timer> _timers = [];
 
   int _charIndex = 0;
@@ -19,7 +19,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   late String _firstMessage = '';
   late UserViewModel userViewModel;
-  late Future<LatLng> initialPosition;
+  late Future<LatLng> initialCenter;
+  late CameraConstraint cameraConstraint;
 
   @override
   void didChangeDependencies() {
@@ -29,9 +30,15 @@ class _DashboardPageState extends State<DashboardPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (userViewModel.status != Status.error) userViewModel.getUserData();
     });
-    initialPosition = userViewModel.riceField != null
-        ? Future.value(GeoUtil.findPolygonCenter(userViewModel.riceField!.coordinates!))
-        : GeoUtil.findCurrentPosition();
+    if (userViewModel.isRiceFieldPolygonPresent) {
+      initialCenter = Future.value(GeoUtil.findPolygonCenter(userViewModel.riceField!.polygon!));
+      final cameraBounds = GeoUtil.findPolygonBounds(userViewModel.riceField!.polygon!);
+      cameraConstraint =
+          CameraConstraint.containCenter(bounds: LatLngBounds(cameraBounds[0], cameraBounds[1]));
+    } else {
+      initialCenter = GeoUtil.findCurrentPosition();
+      cameraConstraint = const CameraConstraint.unconstrained();
+    }
   }
 
   @override
@@ -112,6 +119,46 @@ class _DashboardPageState extends State<DashboardPage> {
     _timers.add(timer);
   }
 
+  Color determineColorLevel(int level) {
+    switch (level) {
+      case 1:
+        return const Color(0xFFEB5600);
+      case 2:
+        return const Color(0xFFEBA000);
+      case 3:
+        return const Color(0xFF729762);
+      case 4:
+        return const Color(0xFF288500);
+      case 0:
+      default:
+        return const Color(0xFF797979);
+    }
+  }
+
+  String determineRiceCondition(List<int> riceLevels, String plantingType) {
+    final averageLevel = riceLevels.reduce((val, e) => val + e) / riceLevels.length;
+
+    String riceCondition;
+    switch (averageLevel.round()) {
+      case 1:
+        riceCondition = "Padi anda sangat kekurangan nutrisi";
+      case 2:
+        riceCondition = "Padi anda kekurangan nutrisi";
+      case 3:
+        if (plantingType == "Direct Seeded") {
+          riceCondition = "Padi anda memiliki nutrisi yang cukup";
+        } else {
+          riceCondition = "Padi anda memiliki nutrisi yang optimal";
+        }
+      case 4:
+        riceCondition = "Padi anda memiliki nutrisi yang optimal";
+      default:
+        riceCondition = "Nutrisi padi tidak dapat diprediksi";
+    }
+
+    return riceCondition;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,27 +166,26 @@ class _DashboardPageState extends State<DashboardPage> {
         centerTitle: true,
         title: Text(_displayText),
       ),
-      body: Consumer<UserViewModel>(builder: (_, userViewModel, __) {
+      body: Builder(builder: (context) {
         if (userViewModel.status == Status.loading) {
           return const Center(child: CircularProgressIndicator(color: Color(0xFF729762)));
         }
 
         if (userViewModel.status == Status.error) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildText(
-                  text: 'Terjadi kesalahan saat mengambil data',
-                  fontWeight: FontWeight.bold,
-                ),
-                const SizedBox(height: 8),
-                MainButton(
-                  onPressed: () => userViewModel.getUserData(),
-                  text: 'Coba Lagi',
-                ),
-              ],
-            ),
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildText(
+                text: 'Terjadi kesalahan saat proses pengambilan data',
+                fontWeight: FontWeight.bold,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              MainButton(
+                onPressed: () => userViewModel.getUserData(),
+                text: 'Coba Lagi',
+              ),
+            ],
           );
         }
 
@@ -148,17 +194,36 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             buildMap(),
             const SizedBox(height: 16),
+            if (!userViewModel.isRiceFieldPolygonPresent) ...[
+              _buildText(
+                text: "Lakukan Pemetaan Sawah untuk melihat sawah anda pada peta",
+                textAlign: TextAlign.center,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              const SizedBox(height: 16),
+            ],
             MainButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed("/map");
-              },
+              onPressed: () => Navigator.of(context).push(WidgetUtil.getRoute(const MapPage())),
               text: 'Buka Pemetaan Sawah',
             ),
-            const SizedBox(height: 16),
+            if (userViewModel.riceLeaves == null || userViewModel.riceLeaves!.isEmpty) ...[
+              const SizedBox(height: 32),
+              _buildText(
+                text: "Pengecekan Terkini",
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+              const SizedBox(height: 16),
+              _buildText(
+                text: "Informasi pengecekan padi terkini akan ditampilkan di sini",
+                textAlign: TextAlign.center,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ],
             if (userViewModel.summary != null) buildCurrentCondition(),
-            const SizedBox(height: 16),
-            buildStatistics(),
-            const SizedBox(height: 16),
+            if (userViewModel.summary != null) buildStatistic(),
             buildAlarm(),
           ],
         );
@@ -173,7 +238,7 @@ class _DashboardPageState extends State<DashboardPage> {
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
       clipBehavior: Clip.antiAlias,
       child: FutureBuilder<LatLng>(
-        future: initialPosition,
+        future: initialCenter,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
@@ -184,15 +249,15 @@ class _DashboardPageState extends State<DashboardPage> {
               initialCenter: snapshot.data ?? AppConstant.defaultInitialPosition,
               initialZoom: initialZoom,
               maxZoom: initialZoom + 3,
-              minZoom: initialZoom - 3,
-              cameraConstraint: CameraConstraint.containCenter(
-                  bounds: LatLngBounds(const LatLng(-5.147, 119.4), const LatLng(-5.148, 119.401))),
+              minZoom: initialZoom - 1,
+              cameraConstraint: cameraConstraint,
             ),
             children: [
               AppConstant.openStreeMapTileLayer,
-              if (userViewModel.riceField != null && userViewModel.summary != null)
-                buildFieldPolygon(),
-              if (userViewModel.summary != null) buildFieldMarker(),
+              if (userViewModel.isRiceFieldPolygonPresent) ...[
+                ...buildRiceLeaves(),
+                buildRiceField(),
+              ]
             ],
           );
         },
@@ -200,118 +265,139 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget buildFieldPolygon() {
-    final group = GeoUtil.groupRiceLeaves(userViewModel.summary!.images ?? []);
-    List<List<LatLng>> clusterCoordinatesList = [];
-    for (var list in group["clusters"]!) {
-      // Cast list to List<dynamic> explicitly
-      if (list is List<dynamic>) {
-        List<LatLng> clusterCoords = list.map((e) {
-          if (e is RiceLeaf) {
-            return e.coordinate as LatLng;
-          }
-          throw Exception("Invalid coordinate data");
-        }).toList();
-        clusterCoordinatesList.add(clusterCoords);
-      }
-    }
-    // print(clusterCoordinatesList);
-
-    List<List<LatLng>> clusterPolygons = [];
-    for (var clusterCoords in clusterCoordinatesList) {
-      final cluster = GeoUtil.generateRoundedBoxPolygon(
-          clusterCoords, 10, userViewModel.riceField!.coordinates ?? []);
-      clusterPolygons.add(cluster);
+  List<Widget> buildRiceLeaves() {
+    final riceLeaves = userViewModel.riceLeaves;
+    if (riceLeaves == null || riceLeaves.isEmpty) {
+      return [];
     }
 
-    // print(clusterPolygons);
+    final polygons =
+        riceLeaves.where((leaf) => leaf.polygon != null && leaf.polygon!.isNotEmpty).map((leaf) {
+      return Polygon(
+        points: leaf.polygon!,
+        color: determineColorLevel(leaf.level ?? 0),
+      );
+    }).toList();
 
+    final markers = riceLeaves
+        .where((leaf) => leaf.points != null && leaf.points!.isNotEmpty)
+        .expand((leaf) => leaf.points!)
+        .map(
+          (point) => Marker(
+            point: point,
+            child: const Icon(
+              Icons.circle,
+              size: 10,
+            ),
+          ),
+        )
+        .toList();
+
+    return [PolygonLayer(polygons: polygons), MarkerLayer(markers: markers)];
+  }
+
+  Widget buildRiceField() {
     return PolygonLayer(
       polygons: [
         Polygon(
           borderStrokeWidth: 5,
-          points: userViewModel.riceField!.coordinates ?? [],
+          points: userViewModel.riceField!.polygon!,
           borderColor: const Color(0xFF00AAFF),
-          color: const Color(0xFFFF5252).withOpacity(0.2),
+          color: Colors.black.withOpacity(0.2),
         ),
-        for (var polygon in clusterPolygons)
-          Polygon(
-            points: polygon,
-            color: const Color(0xFF00AAFF).withOpacity(0.2),
-          ),
-      ],
-    );
-  }
-
-  Widget buildFieldMarker() {
-    return MarkerLayer(
-      markers: [
-        for (var polygon in userViewModel.summary!.images!)
-          Marker(
-            point: polygon.coordinate!,
-            width: 80,
-            height: 80,
-            child: const Icon(Icons.circle),
-          )
-      ],
-    );
-  }
-
-  Widget buildStatistics() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildText(
-          text: 'Hasil Panen',
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
-        ),
-        const LineChartSample(),
-        _buildText(
-          text: 'Penghematan Pupuk',
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
-        ),
-        const LineChartSample(),
       ],
     );
   }
 
   Widget buildCurrentCondition() {
+    final riceLeaves = userViewModel.riceLeaves;
+    if (riceLeaves == null || riceLeaves.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final riceLevels = userViewModel.riceLeaves!
+        .where((e) => e.level != null && e.level != 0)
+        .map((e) => e.level!)
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 32),
         _buildText(
-          text: 'Kondisi Terkini',
+          text: "Pengecekan Terakhir",
           fontWeight: FontWeight.bold,
           fontSize: 20,
         ),
         const SizedBox(height: 16),
         _buildText(
-          text: 'Padi anda kekurangan nutrisi',
+          text: determineRiceCondition(riceLevels, userViewModel.plantingType ?? ''),
         ),
         const SizedBox(height: 8),
         _buildText(
-          text: 'Rekomendasi jumlah pupuk',
+          text: "Prediksi hasil panen :",
         ),
         _buildText(
-          text: '${userViewModel.summary!.statistics![0].ureaRequired!.ceil()} kg',
+          text: "${userViewModel.summary!.statistic![0].yield!.round()} ton",
         ),
         const SizedBox(height: 8),
         _buildText(
-          text: 'Prediksi panen',
+          text: "Rekomendasi jumlah pupuk :",
         ),
         _buildText(
-          text: '${userViewModel.summary!.statistics![0].yields!} ton',
+          text: '${userViewModel.summary!.statistic![0].ureaRequired!.round()} kg',
         ),
         const SizedBox(height: 8),
         _buildText(
-          text: 'Tanggal terakhir pengecekan',
+          text: "Tanggal pengecekan terakhir :",
         ),
         _buildText(
-          text: '${userViewModel.summary!.statistics![0].createdTime!}',
+          text: userViewModel.summary!.statistic![0].createdTime!.formatToCustomString(),
         ),
         const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget buildStatistic() {
+    final statistic = userViewModel.statisic;
+    if (statistic == null || statistic.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final yields =
+        userViewModel.statisic!.where((e) => e.yield != null).map((e) => e.yield!).toList();
+    final ureas = userViewModel.statisic!
+        .where((e) => e.ureaRequired != null)
+        .map((e) => e.ureaRequired!)
+        .toList();
+    final createdTimes = userViewModel.statisic!
+        .where((e) => e.createdTime != null)
+        .map((e) => e.createdTime!)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        _buildText(
+          text: "Tingkat Hasil Panen (Ton)",
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+        ),
+        CustomLineChart(
+          mainData: yields,
+          dataDates: createdTimes,
+        ),
+        _buildText(
+          text: "Penghematan Pupuk (Kg)",
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+        ),
+        CustomLineChart(
+          mainData: ureas,
+          dataDates: createdTimes,
+        ),
       ],
     );
   }
@@ -320,8 +406,9 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 32),
         _buildText(
-          text: 'Jadwal Pengecekan Tanaman',
+          text: "Jadwal Pengecekan Tanaman",
           fontWeight: FontWeight.bold,
           fontSize: 20,
         ),
@@ -331,13 +418,16 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Text _buildText(
-      {required String text,
-      FontWeight fontWeight = FontWeight.normal,
-      double fontSize = 18,
-      Color color = Colors.black}) {
+  Text _buildText({
+    required String text,
+    TextAlign? textAlign,
+    FontWeight? fontWeight,
+    double fontSize = 18,
+    Color? color,
+  }) {
     return Text(
       text,
+      textAlign: textAlign,
       style: TextStyle(
         fontWeight: fontWeight,
         fontSize: fontSize,

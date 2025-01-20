@@ -5,13 +5,14 @@ class MainButton extends StatelessWidget {
   final String text;
   final bool isExpanded;
   final Color buttonColor;
-  const MainButton({
-    super.key,
-    required this.onPressed,
-    required this.text,
-    this.isExpanded = false,
-    this.buttonColor = const Color(0xFF729762),
-  });
+  final double buttonWidth;
+  const MainButton(
+      {super.key,
+      required this.onPressed,
+      required this.text,
+      this.isExpanded = false,
+      this.buttonColor = const Color(0xFF729762),
+      this.buttonWidth = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +27,10 @@ class MainButton extends StatelessWidget {
     return ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size(0, 60),
+          minimumSize: Size(buttonWidth, 60),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           backgroundColor: buttonColor,
+          disabledBackgroundColor: Colors.grey,
         ),
         child: Text(text,
             style: const TextStyle(

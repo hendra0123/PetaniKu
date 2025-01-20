@@ -1,4 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
 part of 'pages.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -46,13 +45,13 @@ class _SignUpPageState extends State<SignUpPage> {
       await requestPhoneCallPermission();
       final enteredPhoneNumber = _phoneController.text.trim();
 
-      if (simNumber == null) {
-        _showSnackBar('Nomor telepon SIM tidak tersedia.', Colors.red);
+      if (simNumber == null && mounted) {
+        WidgetUtil.showSnackBar(context, "Nomor telepon SIM tidak tersedia.", Colors.red);
         return;
       }
-      if (enteredPhoneNumber != simNumber && simNumber!.isNotEmpty) {
-        _showSnackBar(
-            'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.', Colors.red);
+      if (enteredPhoneNumber != simNumber && simNumber!.isNotEmpty && mounted) {
+        WidgetUtil.showSnackBar(context,
+            "Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.", Colors.red);
         return;
       }
 
@@ -64,21 +63,16 @@ class _SignUpPageState extends State<SignUpPage> {
     try {
       String message =
           await userViewModel.postRegister(_nameController.text, _phoneController.text);
-      _showSnackBar(message, null);
-
-      Navigator.of(context).pushNamedAndRemoveUntil("/dashboard", (route) => false);
+      if (mounted) {
+        WidgetUtil.showSnackBar(context, message, null);
+        Navigator.of(context).pushAndRemoveUntil(
+          WidgetUtil.getRoute(const MainNavigationPage()),
+          (route) => false,
+        );
+      }
     } catch (e) {
-      _showSnackBar(e.toString(), Colors.red);
+      if (mounted) WidgetUtil.showSnackBar(context, e.toString(), Colors.red);
     }
-  }
-
-  void _showSnackBar(String message, Color? color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-      ),
-    );
   }
 
   void _showPermissionDialog() {
@@ -246,7 +240,10 @@ class _SignUpPageState extends State<SignUpPage> {
             textColor: const Color(0xFF729762),
             borderColor: const Color(0xFF729762),
             onPressed: () {
-              Navigator.of(context).pushNamedAndRemoveUntil("/login", (route) => false);
+              Navigator.of(context).pushAndRemoveUntil(
+                WidgetUtil.getRoute(const LoginPage()),
+                (route) => false,
+              );
             },
           ),
         ],
@@ -299,18 +296,16 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Widget _buildLoadingOverlay() {
-    return Consumer<UserViewModel>(
-      builder: (_, userViewModel, __) {
-        if (userViewModel.status == Status.loading) {
-          return Container(
-            color: Colors.black.withOpacity(0.5),
-            child: const Center(
-              child: CircularProgressIndicator(color: Color(0xFF729762)),
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      },
-    );
+    return Builder(builder: (_) {
+      if (userViewModel.status == Status.loading) {
+        return Container(
+          color: Colors.black.withOpacity(0.5),
+          child: const Center(
+            child: CircularProgressIndicator(color: Color(0xFF729762)),
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    });
   }
 }

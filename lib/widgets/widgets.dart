@@ -5,6 +5,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-part 'line_chart_sample.dart';
+part 'custom_line_chart.dart';
 part 'alarm.dart';
 part 'main_button.dart';

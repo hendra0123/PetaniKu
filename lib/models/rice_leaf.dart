@@ -1,39 +1,48 @@
 part of 'models.dart';
 
 class RiceLeaf extends Equatable {
-  final LatLng? coordinate;
+  final List<LatLng>? polygon;
+  final List<LatLng>? points;
   final int? level;
-  final String? url;
 
-  const RiceLeaf({this.coordinate, this.level, this.url});
+  const RiceLeaf({
+    this.polygon,
+    this.points,
+    this.level,
+  });
 
   factory RiceLeaf.fromJson(Map<String, dynamic> json) => RiceLeaf(
-        coordinate: LatLng(
-          (json['latitude'] as num).toDouble(),
-          (json['longitude'] as num).toDouble(),
-        ),
+        polygon: (json['polygon'] as List<dynamic>?)
+            ?.map((point) => LatLng(
+                (point[0] as num).toDouble(), (point[1] as num).toDouble()))
+            .toList(),
+        points: (json['points'] as List<dynamic>?)
+            ?.map((point) => LatLng(
+                (point[0] as num).toDouble(), (point[1] as num).toDouble()))
+            .toList(),
         level: json['level'] as int?,
-        url: json['url'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
-        'coordinate': coordinate,
+        'polygon':
+            polygon?.map((point) => [point.latitude, point.longitude]).toList(),
+        'points':
+            points?.map((point) => [point.latitude, point.longitude]).toList(),
         'level': level,
-        'url': url,
       };
 
   RiceLeaf copyWith({
-    LatLng? coordinate,
+    List<LatLng>? polygon,
+    List<LatLng>? points,
     int? level,
-    String? url,
   }) {
     return RiceLeaf(
-      coordinate: coordinate ?? this.coordinate,
+      polygon: polygon ?? this.polygon,
+      points: points ?? this.points,
       level: level ?? this.level,
-      url: url ?? this.url,
     );
   }
 
   @override
-  List<Object?> get props => [coordinate, level, url];
+  List<Object?> get props => [polygon, points, level];
 }

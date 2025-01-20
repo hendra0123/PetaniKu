@@ -1,9 +1,6 @@
 part of 'shared.dart';
 
 class GeoUtil {
-  static final _dbscan = DBSCANRiceLeaf(epsilon: 20, minPoints: 2);
-  static final _polygonGenerator = PolygonGenerator();
-
   static Future<LatLng> findCurrentPosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -30,19 +27,24 @@ class GeoUtil {
     return LatLng(position.latitude, position.longitude);
   }
 
+  static num findDistanceBetween(LatLng origin, LatLng target) {
+    return Geolocator.distanceBetween(
+        origin.latitude, origin.longitude, target.latitude, target.longitude);
+  }
+
 // TODO: REPAIR FUNCTION
   static double findMinZoom({
-    required List<LatLng> points,
+    required List<LatLng> polygon,
     required Size screenSize,
     double tileSize = 256,
   }) {
-    if (points.isEmpty) return 0;
+    if (polygon.isEmpty) return 0;
 
     // Find the bounding box
-    double minLat = points.map((p) => p.latitude).reduce(min);
-    double maxLat = points.map((p) => p.latitude).reduce(max);
-    double minLng = points.map((p) => p.longitude).reduce(min);
-    double maxLng = points.map((p) => p.longitude).reduce(max);
+    double minLat = polygon.map((p) => p.latitude).reduce(min);
+    double maxLat = polygon.map((p) => p.latitude).reduce(max);
+    double minLng = polygon.map((p) => p.longitude).reduce(min);
+    double maxLng = polygon.map((p) => p.longitude).reduce(max);
 
     // Map size in pixels with padding
     double width = screenSize.width;
@@ -64,15 +66,10 @@ class GeoUtil {
     return min(latZoom, lngZoom);
   }
 
-  static num findDistanceBetween(LatLng origin, LatLng target) {
-    return Geolocator.distanceBetween(
-        origin.latitude, origin.longitude, target.latitude, target.longitude);
-  }
-
-  static LatLng findPolygonCenter(List<LatLng> points) {
+  static LatLng findPolygonCenter(List<LatLng> polygon) {
     double x = 0, y = 0, z = 0;
 
-    for (var point in points) {
+    for (var point in polygon) {
       final latRad = degToRadian(point.latitude);
       final lonRad = degToRadian(point.longitude);
 
@@ -82,7 +79,7 @@ class GeoUtil {
       z += sin(latRad);
     }
 
-    final totalPoints = points.length;
+    final totalPoints = polygon.length;
     x /= totalPoints;
     y /= totalPoints;
     z /= totalPoints;
@@ -96,55 +93,51 @@ class GeoUtil {
     return LatLng(radianToDeg(lat), radianToDeg(lon));
   }
 
-  static double findPolygonArea(List<LatLng> points) {
+  static double findPolygonArea(List<LatLng> polygon) {
     // square meter to hectare
-    double area = mp.SphericalUtil.computeArea(_convertPoints(points)) / 10000;
+    double area = mp.SphericalUtil.computeArea(_toMPPoints(polygon)) / 10000;
     return double.parse(area.toStringAsFixed(2));
   }
 
-  static List<LatLng> simplifyPolygon(List<LatLng> points) {
-    final simplifyPoints = mp.PolygonUtil.simplify(_convertPoints(points), 3);
-    return _reverseConvertPoints(simplifyPoints);
+  static List<LatLng> findPolygonBounds(List<LatLng> polygon) {
+    double minLat = polygon.map((p) => p.latitude).reduce(min);
+    double maxLat = polygon.map((p) => p.latitude).reduce(max);
+    double minLng = polygon.map((p) => p.longitude).reduce(min);
+    double maxLng = polygon.map((p) => p.longitude).reduce(max);
+    return [LatLng(minLat, minLng), LatLng(maxLat, maxLng)];
   }
 
-  static bool isValidPolygon(List<LatLng> points) {
-    if (points.length < 4 || points.first != points.last) {
+  static List<LatLng> simplifyPolygon(List<LatLng> polygon) {
+    final simplifyPoints = mp.PolygonUtil.simplify(_toMPPoints(polygon), 3);
+    return _toLatlongPoints(simplifyPoints);
+  }
+
+  static bool isInsidePolygon(List<LatLng> polygon, LatLng point) {
+    return mp.PolygonUtil.containsLocation(_toMPPoints([point]).first, _toMPPoints(polygon), false);
+  }
+
+  static bool isValidPolygon(List<LatLng> polygon) {
+    if (polygon.length < 4 || polygon.first != polygon.last) {
       return false;
     }
 
     // Check if there is intersecting sides
-    for (int i = 0; i < points.length - 1; i++) {
-      for (int j = i + 2; j < points.length - 1; j++) {
+    for (int i = 0; i < polygon.length - 1; i++) {
+      for (int j = i + 2; j < polygon.length - 1; j++) {
         // Skip adjacent edges
-        if (i == 0 && j == points.length - 2) continue;
+        if (i == 0 && j == polygon.length - 2) continue;
 
         if (_doEdgesIntersect(
-          points[i],
-          points[i + 1],
-          points[j],
-          points[j + 1],
+          polygon[i],
+          polygon[i + 1],
+          polygon[j],
+          polygon[j + 1],
         )) {
           return false; // Found intersecting sides
         }
       }
     }
     return true; // No intersections found
-  }
-
-  static List<LatLng> generateCirclePolygon(
-      LatLng point, double distanceToPerimeter, List<LatLng> boundaryPoints) {
-    return _polygonGenerator.circlePolygon(point, distanceToPerimeter, boundaryPoints);
-  }
-
-  static List<LatLng> generateRoundedBoxPolygon(
-      List<LatLng> points, double distanceToPerimeter, List<LatLng> boundaryPoints) {
-    return points.isNotEmpty
-        ? _polygonGenerator.roundedBoxPolygon(points, distanceToPerimeter, boundaryPoints)
-        : [];
-  }
-
-  static Map<String, List> groupRiceLeaves(List<RiceLeaf> riceLeaves) {
-    return _dbscan.run(riceLeaves);
   }
 
   static bool _doEdgesIntersect(LatLng a, LatLng b, LatLng c, LatLng d) {
@@ -182,7 +175,7 @@ class GeoUtil {
     return false; // No intersection
   }
 
-  static List<mp.LatLng> _convertPoints(List<LatLng> points) {
+  static List<mp.LatLng> _toMPPoints(List<LatLng> points) {
     final List<mp.LatLng> convertedPoints = [];
     for (var point in points) {
       final convertedPoint = mp.LatLng(point.latitude, point.longitude);
@@ -191,7 +184,7 @@ class GeoUtil {
     return convertedPoints;
   }
 
-  static List<LatLng> _reverseConvertPoints(List<mp.LatLng> points) {
+  static List<LatLng> _toLatlongPoints(List<mp.LatLng> points) {
     final List<LatLng> reverseConvertedPoints = [];
     for (var point in points) {
       final convertedPoint = LatLng(point.latitude, point.longitude);

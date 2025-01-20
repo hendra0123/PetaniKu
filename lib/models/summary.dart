@@ -1,72 +1,66 @@
 part of 'models.dart';
 
 class Summary extends Equatable {
+  final List<RiceLeaf>? riceLeaves;
+  final List<Statistic>? statistic;
+  final DateTime? createdTime;
+  final String? plantingType;
   final String? season;
   final int? paddyAge;
-  final String? plantingType;
-  final List<RiceLeaf>? images;
-  final DateTime? createdTime;
-  final List<Statistic>? statistics;
 
   const Summary({
+    this.riceLeaves,
+    this.statistic,
+    this.createdTime,
+    this.plantingType,
     this.season,
     this.paddyAge,
-    this.plantingType,
-    this.images,
-    this.createdTime,
-    this.statistics,
   });
 
   factory Summary.fromJson(Map<String, dynamic> json) => Summary(
-        season: json['season'] as String?,
-        paddyAge: json['paddy_age'] as int?,
-        plantingType: json['planting_type'] as String?,
-        images: (json['images'] as List<dynamic>?)
+        riceLeaves: (json['rice_leaves'] as List<dynamic>?)
             ?.map((e) => RiceLeaf.fromJson(e as Map<String, dynamic>))
             .toList(),
-        createdTime:
-            json['created_time'] == null ? null : DateTime.parse(json['created_time'] as String),
-        statistics: (json['statistics'] as List<dynamic>?)
+        statistic: (json['statistic'] as List<dynamic>?)
             ?.map((e) => Statistic.fromJson(e as Map<String, dynamic>))
             .toList(),
+        createdTime: json['created_time'] == null
+            ? null
+            : DateTime.parse(json['created_time'] as String),
+        plantingType: json['planting_type'] as String?,
+        season: json['season'] as String?,
+        paddyAge: (json['paddy_age'] as num?)?.toInt(),
       );
 
   Map<String, dynamic> toJson() => {
+        'rice_leaves': riceLeaves?.map((e) => e.toJson()).toList(),
+        'statistic': statistic?.map((e) => e.toJson()).toList(),
+        'created_time': createdTime?.toIso8601String(),
+        'planting_type': plantingType,
         'season': season,
         'paddy_age': paddyAge,
-        'planting_type': plantingType,
-        'images': images?.map((e) => e.toJson()).toList(),
-        'created_time': createdTime?.toIso8601String(),
-        'statistics': statistics?.map((e) => e.toJson()).toList(),
       };
 
   Summary copyWith({
-    String? season,
-    int? paddyAge,
-    String? plantingType,
-    List<RiceLeaf>? images,
+    List<RiceLeaf>? riceLeaves,
+    List<Statistic>? statistic,
     DateTime? createdTime,
-    List<Statistic>? statistics,
+    String? season,
+    String? plantingType,
+    int? paddyAge,
   }) {
     return Summary(
+      riceLeaves: riceLeaves ?? this.riceLeaves,
+      statistic: statistic ?? this.statistic,
+      createdTime: createdTime ?? this.createdTime,
+      plantingType: plantingType ?? this.plantingType,
       season: season ?? this.season,
       paddyAge: paddyAge ?? this.paddyAge,
-      plantingType: plantingType ?? this.plantingType,
-      images: images ?? this.images,
-      createdTime: createdTime ?? this.createdTime,
-      statistics: statistics ?? this.statistics,
     );
   }
 
   @override
   List<Object?> get props {
-    return [
-      season,
-      paddyAge,
-      plantingType,
-      images,
-      createdTime,
-      statistics,
-    ];
+    return [riceLeaves, statistic, createdTime, plantingType, season, paddyAge];
   }
 }

@@ -1,87 +1,87 @@
 part of 'pages.dart';
 
 class CameraPage extends StatefulWidget {
-  final CameraDescription camera;
+  final VoidCallback backToDashboard;
 
-  const CameraPage({super.key, required this.camera});
+  const CameraPage({super.key, required this.backToDashboard});
 
   @override
   State<CameraPage> createState() => _CameraPageState();
 }
 
 class _CameraPageState extends State<CameraPage> {
-  late CameraController _cameraController;
-  late Future<void> _initializeControllerFuture;
+  final double initialZoom = AppConstant.defaultInitialZoom;
+  final AlignOnUpdate _followOnLocationUpdate = AlignOnUpdate.always;
+  final StreamController<double?> _followCurrentLocationStreamController =
+      StreamController<double?>.broadcast();
+  final Stream<Position> _positionStream = Geolocator.getPositionStream(
+    locationSettings: const LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 10,
+    ),
+  );
   final List<XFile> _capturedImages = [];
+  final List<LatLng> _imagePositions = [];
+
+  Future<LatLng> initialPosition = GeoUtil.findCurrentPosition();
+  String _positionErrorMsg = "";
   bool _isInCameraMode = true;
+  bool _isLoading = false;
+  bool _isInsideRiceField = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _cameraController = CameraController(
-      widget.camera,
-      ResolutionPreset.high,
-      enableAudio: false,
-    );
-    _initializeControllerFuture = _cameraController.initialize();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _showInfoDialog());
+  late Future<void> _initializeControllerFuture;
+  late CameraController _cameraController;
+  late UserViewModel userViewModel;
+
+  void startListeningToPositionChanges() {
+    _positionStream.listen((Position position) {
+      _checkCurrentPosition(LatLng(position.latitude, position.longitude));
+    });
   }
 
-  @override
-  void dispose() {
-    _cameraController.dispose();
-    super.dispose();
-  }
-
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            "Informasi",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: const Text(
-            "Silahkan mengambil hingga 10 foto tanaman Anda untuk analisis lebih lanjut.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text(
-                "OK",
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _takePicture() async {
-    // kekx gak perlu karna nda adamih tombol +
-    if (_capturedImages.length >= 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Anda hanya dapat mengambil maksimal 10 foto."),
-          backgroundColor: Colors.red,
-        ),
-      );
+  void _checkCurrentPosition(LatLng newLocation) async {
+    if (!mounted) return;
+    if (!userViewModel.isRiceFieldPolygonPresent) {
+      _setUserPositionStatus(false, "Anda harus melakukan Pemetaan Sawah dahulu");
       return;
     }
 
+    bool isLocationValid = GeoUtil.isInsidePolygon(userViewModel.riceField!.polygon!, newLocation);
+    if (isLocationValid) {
+    } else if (!isLocationValid) {
+      _setUserPositionStatus(false, "Anda harus berada di dalam lokasi sawah");
+    }
+  }
+
+  void _setUserPositionStatus(bool status, String message) {
+    setState(() {
+      _isInsideRiceField = status;
+      _positionErrorMsg = message;
+    });
+  }
+
+  Future<void> _takePicture() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
     try {
-      await _initializeControllerFuture;
+      final currentPosition = await GeoUtil.findCurrentPosition();
+      if (!GeoUtil.isInsidePolygon(userViewModel.riceField!.polygon!, currentPosition) && mounted) {
+        _setUserPositionStatus(false, "Anda harus berada di dalam lokasi sawah");
+        setState(() => _isLoading = false);
+        return;
+      }
+
       final image = await _cameraController.takePicture();
-      setState(() {
-        _capturedImages.add(image);
-        _isInCameraMode = false; // Kembali ke tampilan grid setelah foto
-      });
+      if (mounted) {
+        setState(() {
+          _imagePositions.add(currentPosition);
+          _capturedImages.add(image);
+          _isInCameraMode = false; // Kembali ke tampilan grid setelah foto
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      print(e);
+      if (mounted) WidgetUtil.showSnackBar(context, e.toString(), Colors.red);
     }
   }
 
@@ -91,21 +91,54 @@ class _CameraPageState extends State<CameraPage> {
         _isInCameraMode = true;
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Anda hanya dapat mengambil maksimal 10 foto."),
-          backgroundColor: Colors.red,
-        ),
-      );
+      WidgetUtil.showSnackBar(context, "Anda hanya dapat mengambil maksimal 10 foto.", Colors.red);
     }
   }
 
-  void _viewImage(String imagePath) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => FullScreenImageView(imagePath: imagePath),
-      ),
+  void _viewImageFullscreen(String imagePath) {
+    Navigator.of(context).push(WidgetUtil.getRoute(FullScreenImageView(imagePath: imagePath)));
+  }
+
+  void _navigateToFormPlant() async {
+    final imageFiles = _capturedImages.map((xfile) => File(xfile.path)).toList();
+    final result = await Navigator.of(context).push(
+      WidgetUtil.getRoute(FormPlant(images: imageFiles, points: _imagePositions)),
     );
+
+    if (result != null && result.runtimeType == Prediction && mounted) {
+      setState(() {
+        _capturedImages.clear();
+        _imagePositions.clear();
+        _isInCameraMode = true;
+      });
+      widget.backToDashboard();
+      Navigator.of(context).push(WidgetUtil.getRoute(const MapPage()));
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    userViewModel = Provider.of<UserViewModel>(context);
+    GeoUtil.findCurrentPosition().then((value) => _checkCurrentPosition(value));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _cameraController = CameraController(
+      AppConstant.cameraDesc,
+      ResolutionPreset.high,
+      enableAudio: false,
+    );
+    _initializeControllerFuture = _cameraController.initialize();
+    startListeningToPositionChanges();
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
   }
 
   @override
@@ -114,8 +147,6 @@ class _CameraPageState extends State<CameraPage> {
       appBar: AppBar(
         centerTitle: true,
         title: const Text("Kamera"),
-        backgroundColor: Colors.grey.shade300,
-        foregroundColor: Colors.black,
       ),
       body: _isInCameraMode
           ? FutureBuilder<void>(
@@ -124,23 +155,60 @@ class _CameraPageState extends State<CameraPage> {
                 if (snapshot.connectionState == ConnectionState.done) {
                   return Stack(
                     children: [
-                      CameraPreview(_cameraController),
+                      SizedBox(
+                        width: double.infinity,
+                        height: double.infinity,
+                        child: CameraPreview(_cameraController),
+                      ),
+                      if (!_isInsideRiceField)
+                        Align(
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.8,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.red,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _positionErrorMsg,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       Align(
                         alignment: Alignment.bottomCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: FloatingActionButton.extended(
-                            backgroundColor: Colors.green,
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text("Ambil Foto"),
-                            onPressed: _takePicture,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                          child: MainButton(
+                            onPressed: _isInsideRiceField ? _takePicture : null,
+                            buttonWidth: double.infinity,
+                            text: 'Ambil Foto',
                           ),
                         ),
                       ),
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: buildMap(),
+                      ),
+                      if (_isLoading) _buildLoadingOverlay()
                     ],
                   );
                 } else {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF729762)));
                 }
               },
             )
@@ -160,7 +228,7 @@ class _CameraPageState extends State<CameraPage> {
                     itemBuilder: (context, index) {
                       if (index < _capturedImages.length) {
                         return GestureDetector(
-                          onTap: () => _viewImage(_capturedImages[index].path),
+                          onTap: () => _viewImageFullscreen(_capturedImages[index].path),
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -197,57 +265,105 @@ class _CameraPageState extends State<CameraPage> {
                     },
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      final imageFiles = _capturedImages.map((xfile) => File(xfile.path)).toList();
-
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => FormPlant(images: imageFiles),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.upload, color: Colors.white),
-                    label: const Text(
-                      "Kirim Foto",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  child: MainButton(
+                    onPressed: _navigateToFormPlant,
+                    text: 'Kirim Foto',
+                    buttonWidth: double.infinity,
                   ),
                 ),
               ],
             ),
     );
   }
-}
 
-class FullScreenImageView extends StatelessWidget {
-  final String imagePath;
-
-  const FullScreenImageView({super.key, required this.imagePath});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        elevation: 0,
+  Widget buildMap() {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.5,
+      height: MediaQuery.of(context).size.height * 0.2,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
       ),
-      body: Center(
-        child: Image.file(
-          File(imagePath),
-          fit: BoxFit.contain,
+      clipBehavior: Clip.antiAlias,
+      child: FutureBuilder<LatLng>(
+        future: initialPosition,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF729762)));
+          }
+
+          if (snapshot.hasError) {
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  initialPosition = GeoUtil.findCurrentPosition();
+                });
+              },
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.restart_alt_outlined,
+                    size: 50,
+                  ),
+                  Text('Muat ulang peta'),
+                ],
+              ),
+            );
+          }
+
+          return FlutterMap(
+            options: MapOptions(
+              initialCenter: snapshot.data ?? AppConstant.defaultInitialPosition,
+              initialZoom: initialZoom,
+              maxZoom: initialZoom + 3,
+              minZoom: initialZoom - 1,
+            ),
+            children: [
+              AppConstant.openStreeMapTileLayer,
+              if (userViewModel.isRiceFieldPolygonPresent) buildRiceField(),
+              buildCurrentLocationLayer(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget buildRiceField() {
+    return PolygonLayer(
+      polygons: [
+        Polygon(
+          borderStrokeWidth: 5,
+          points: userViewModel.riceField!.polygon!,
+          borderColor: const Color(0xFF00AAFF),
+          color: Colors.black.withOpacity(0.2),
         ),
+      ],
+    );
+  }
+
+  Widget buildCurrentLocationLayer() {
+    return CurrentLocationLayer(
+      alignPositionStream: _followCurrentLocationStreamController.stream,
+      alignPositionOnUpdate: _followOnLocationUpdate,
+      alignDirectionOnUpdate: AlignOnUpdate.never,
+      style: const LocationMarkerStyle(
+        marker: DefaultLocationMarker(),
+        markerSize: Size(20, 20),
+        markerDirection: MarkerDirection.heading,
+      ),
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: const Center(
+        child: CircularProgressIndicator(color: Color(0xFF729762)),
       ),
     );
   }

@@ -7,3 +7,4 @@ part 'summary.dart';
 part 'statistic.dart';
 part 'rice_leaf.dart';
 part 'prediction.dart';
+part 'history.dart';

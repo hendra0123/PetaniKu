@@ -2,42 +2,51 @@ part of 'models.dart';
 
 class RiceField extends Equatable {
   final DateTime? createdTime;
-  final List<LatLng>? coordinates;
-  final num? area;
+  final List<LatLng>? polygon;
+  final double? maxYield;
+  final double? area;
 
-  const RiceField({this.createdTime, this.coordinates, this.area});
+  const RiceField({
+    this.createdTime,
+    this.polygon,
+    this.maxYield,
+    this.area,
+  });
 
   factory RiceField.fromJson(Map<String, dynamic> json) => RiceField(
         createdTime: json['created_time'] == null
             ? null
             : DateTime.parse(json['created_time'] as String),
-        coordinates: (json['coordinates'] as List<dynamic>?)
-            ?.map((e) => LatLng(
-                  (e['latitude'] as num).toDouble(),
-                  (e['longitude'] as num).toDouble(),
-                ))
+        polygon: (json['polygon'] as List<dynamic>?)
+            ?.map((point) => LatLng(
+                (point[0] as num).toDouble(), (point[1] as num).toDouble()))
             .toList(),
-        area: json['area'] as num,
+        maxYield: (json['max_yield'] as num?)?.toDouble(),
+        area: (json['area'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
         'created_time': createdTime?.toIso8601String(),
-        'coordinates': coordinates?.map((e) => e.toJson()).toList(),
+        'polygon':
+            polygon?.map((point) => [point.latitude, point.longitude]).toList(),
+        'max_yield': maxYield,
         'area': area,
       };
 
   RiceField copyWith({
     DateTime? createdTime,
-    List<LatLng>? coordinates,
-    num? area,
+    List<LatLng>? polygon,
+    double? maxYield,
+    double? area,
   }) {
     return RiceField(
       createdTime: createdTime ?? this.createdTime,
-      coordinates: coordinates ?? this.coordinates,
+      polygon: polygon ?? this.polygon,
+      maxYield: maxYield ?? this.maxYield,
       area: area ?? this.area,
     );
   }
 
   @override
-  List<Object?> get props => [createdTime, coordinates, area];
+  List<Object?> get props => [createdTime, polygon, maxYield, area];
 }

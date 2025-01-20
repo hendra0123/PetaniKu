@@ -1,100 +1,93 @@
 part of 'models.dart';
 
 class Prediction extends Equatable {
-  final double? ureaRequired;
-  final int? yields;
-  final int? nitrogenRequired;
-  final String? plantingType;
-  final DateTime? createdTime;
   final List<RiceLeaf>? riceLeaves;
-  final int? paddyAge;
+  final List<String>? imageUrls;
   final RiceField? riceField;
-  final double? fertilizerRequired;
+  final DateTime? createdTime;
+  final String? plantingType;
   final String? season;
+  final double? ureaRequired;
+  final int? paddyAge;
+  final double? yield;
 
   const Prediction({
-    this.ureaRequired,
-    this.yields,
-    this.nitrogenRequired,
-    this.plantingType,
-    this.createdTime,
     this.riceLeaves,
-    this.paddyAge,
+    this.imageUrls,
     this.riceField,
-    this.fertilizerRequired,
+    this.createdTime,
+    this.plantingType,
     this.season,
+    this.ureaRequired,
+    this.paddyAge,
+    this.yield,
   });
 
   factory Prediction.fromJson(Map<String, dynamic> json) => Prediction(
-        ureaRequired: (json['urea_required'] as num?)?.toDouble(),
-        yields: json['yields'] as int?,
-        nitrogenRequired: json['nitrogen_required'] as int?,
-        plantingType: json['planting_type'] as String?,
-        createdTime:
-            json['created_time'] == null ? null : DateTime.parse(json['created_time'] as String),
-        riceLeaves: (json['images'] as List<dynamic>?)
+        riceLeaves: (json['rice_leaves'] as List<dynamic>?)
             ?.map((e) => RiceLeaf.fromJson(e as Map<String, dynamic>))
             .toList(),
-        paddyAge: json['paddy_age'] as int?,
+        imageUrls: (json['image_urls'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
         riceField: json['rice_field'] == null
             ? null
             : RiceField.fromJson(json['rice_field'] as Map<String, dynamic>),
-        fertilizerRequired: (json['fertilizer_required'] as num?)?.toDouble(),
+        createdTime:
+            json['created_time'] == null ? null : DateTime.parse(json['created_time'] as String),
+        plantingType: json['planting_type'] as String?,
         season: json['season'] as String?,
+        ureaRequired: (json['urea_required'] as num?)?.toDouble(),
+        paddyAge: (json['paddy_age'] as num?)?.toInt(),
+        yield: (json['yield'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
-        'urea_required': ureaRequired,
-        'yields': yields,
-        'nitrogen_required': nitrogenRequired,
-        'planting_type': plantingType,
-        'created_time': createdTime?.toIso8601String(),
-        'images': riceLeaves?.map((e) => e.toJson()).toList(),
-        'paddy_age': paddyAge,
+        'rice_leaves': riceLeaves?.map((e) => e.toJson()).toList(),
+        'image_urls': imageUrls,
         'rice_field': riceField?.toJson(),
-        'fertilizer_required': fertilizerRequired,
+        'created_time': createdTime?.toIso8601String(),
+        'planting_type': plantingType,
         'season': season,
+        'urea_required': ureaRequired,
+        'paddy_age': paddyAge,
+        'yield': yield,
       };
 
   Prediction copyWith({
-    double? ureaRequired,
-    int? yields,
-    int? nitrogenRequired,
-    String? plantingType,
-    DateTime? createdTime,
-    List<RiceLeaf>? images,
-    int? paddyAge,
+    List<RiceLeaf>? riceLeaves,
+    List<String>? imageUrls,
     RiceField? riceField,
-    double? fertilizerRequired,
+    DateTime? createdTime,
+    String? plantingType,
     String? season,
+    double? ureaRequired,
+    int? paddyAge,
+    double? yield,
   }) {
     return Prediction(
-      ureaRequired: ureaRequired ?? this.ureaRequired,
-      yields: yields ?? this.yields,
-      nitrogenRequired: nitrogenRequired ?? this.nitrogenRequired,
-      plantingType: plantingType ?? this.plantingType,
-      createdTime: createdTime ?? this.createdTime,
-      riceLeaves: images ?? this.riceLeaves,
-      paddyAge: paddyAge ?? this.paddyAge,
+      riceLeaves: riceLeaves ?? this.riceLeaves,
+      imageUrls: imageUrls ?? this.imageUrls,
       riceField: riceField ?? this.riceField,
-      fertilizerRequired: fertilizerRequired ?? this.fertilizerRequired,
+      createdTime: createdTime ?? this.createdTime,
+      plantingType: plantingType ?? this.plantingType,
       season: season ?? this.season,
+      ureaRequired: ureaRequired ?? this.ureaRequired,
+      paddyAge: paddyAge ?? this.paddyAge,
+      yield: yield ?? this.yield,
     );
   }
 
   @override
   List<Object?> get props {
     return [
-      ureaRequired,
-      yields,
-      nitrogenRequired,
-      plantingType,
-      createdTime,
       riceLeaves,
-      paddyAge,
+      imageUrls,
       riceField,
-      fertilizerRequired,
+      createdTime,
+      plantingType,
       season,
+      ureaRequired,
+      paddyAge,
+      yield,
     ];
   }
 }

@@ -1,45 +1,50 @@
 part of 'models.dart';
 
 class User extends Equatable {
+  final RiceField? riceField;
+  final Summary? summary;
   final String? phone;
   final String? name;
-  final Summary? summary;
-  final RiceField? riceField;
 
-  const User({this.phone, this.name, this.summary, this.riceField});
+  const User({
+    this.riceField,
+    this.summary,
+    this.phone,
+    this.name,
+  });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-        phone: json['phone'] as String?,
-        name: json['name'] as String?,
-        summary: json['summary'] == null
-            ? null
-            : Summary.fromJson(json['summary'] as Map<String, dynamic>),
         riceField: json['rice_field'] == null
             ? null
             : RiceField.fromJson(json['rice_field'] as Map<String, dynamic>),
+        summary: json['summary'] == null
+            ? null
+            : Summary.fromJson(json['summary'] as Map<String, dynamic>),
+        phone: json['phone'] as String?,
+        name: json['name'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
+        'rice_field': riceField?.toJson(),
+        'summary': summary?.toJson(),
         'phone': phone,
         'name': name,
-        'summary': summary?.toJson(),
-        'rice_field': riceField?.toJson(),
       };
 
   User copyWith({
+    RiceField? riceField,
+    Summary? summary,
     String? phone,
     String? name,
-    Summary? summary,
-    RiceField? riceField,
   }) {
     return User(
+      riceField: riceField ?? this.riceField,
+      summary: summary ?? this.summary,
       phone: phone ?? this.phone,
       name: name ?? this.name,
-      summary: summary ?? this.summary,
-      riceField: riceField ?? this.riceField,
     );
   }
 
   @override
-  List<Object?> get props => [phone, name, summary, riceField];
+  List<Object?> get props => [riceField, summary, phone, name];
 }

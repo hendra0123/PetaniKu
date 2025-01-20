@@ -3,10 +3,10 @@ part of 'repository.dart';
 class PredictionRepository {
   final String prefixEndpoint = "/user/predictions";
 
-  Future<List<Prediction>> fetchHistories() async {
+  Future<List<History>> fetchHistory() async {
     try {
       dynamic response = await apiServices.getJSONRequest(prefixEndpoint);
-      return (response as List).map((e) => Prediction.fromJson(e)).toList();
+      return (response as List).map((e) => History.fromJson(e)).toList();
     } catch (e) {
       rethrow;
     }
@@ -21,22 +21,25 @@ class PredictionRepository {
     }
   }
 
-  Future<Prediction> createPrediction(String season, String plantingType, num paddyAge,
-      List<LatLng> coordinates, List<String> imagePaths) async {
+  Future<Prediction> createPrediction(String season, String plantingType, int paddyAge,
+      List<File> images, List<LatLng> points) async {
     final payload = {
       "season": season,
       "planting_type": plantingType,
       "paddy_age": paddyAge,
-      "coordinates": coordinates.map((coordinate) {
-        return {"latitude": coordinate.latitude, "longitude": coordinate.longitude};
-      }).toList(),
+      "points": points.map((point) => [point.latitude, point.longitude]).toList(),
     };
-    final imageFiles = imagePaths.map((path) {
-      return {'key': 'images', 'path': path, 'mimeType': 'image', 'subtype': 'jpeg'};
+    final imageData = images.map((img) {
+      final mimeType = lookupMimeType(img.path);
+      return {
+        'key': 'images',
+        'path': img.path,
+        'mimeType': mimeType?.split('/')[0] ?? 'image',
+        'subtype': mimeType?.split('/')[1] ?? 'jpeg',
+      };
     }).toList();
     try {
-      dynamic response =
-          await apiServices.postMultipartRequest(prefixEndpoint, payload, imageFiles);
+      dynamic response = await apiServices.postMultipartRequest(prefixEndpoint, payload, imageData);
       return Prediction.fromJson(response);
     } catch (e) {
       rethrow;

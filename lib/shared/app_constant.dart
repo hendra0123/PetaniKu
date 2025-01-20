@@ -1,13 +1,20 @@
 part of 'shared.dart';
 
 class AppConstant {
-  static const double defaultInitialZoom = 19;
+  static const double defaultInitialZoom = 18;
 
   static const LatLng defaultInitialPosition = LatLng(-5.149333, 119.395184);
 
   static const String baseUrl = "https://b29q2kft-5000.asse.devtunnels.ms/";
 
-  static String authentication = "";
+  static String authentication =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiUExXdmtoN1h4NW1ITFl2WEhPZFUiLCJleHAiOjE3MzcyMTM3MjEsImlhdCI6MTczNzEyNzMyMX0.gPTVRG2KN87bHWs2TBK2764eIMlEP5wHWleY9llA2pw";
+
+  static CameraDescription cameraDesc = const CameraDescription(
+    name: 'default',
+    lensDirection: CameraLensDirection.back,
+    sensorOrientation: 0,
+  );
 
   static TileLayer get openStreeMapTileLayer =>
       TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png");

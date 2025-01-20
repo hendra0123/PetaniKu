@@ -13,11 +13,11 @@ class NetworkApiServices implements BaseApiServices {
   Future getJSONRequest(String endpoint) async {
     dynamic responseJson;
     try {
-      final response =
-          await http.get(Uri.parse(AppConstant.baseUrl + endpoint), headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': "Bearer ${AppConstant.authentication}",
-      });
+      final response = await http.get(Uri.parse(AppConstant.baseUrl + endpoint),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Authorization': "Bearer ${AppConstant.authentication}",
+          });
       responseJson = returnResponse(response);
     } on SocketException {
       throw NoInternetException('Pastikan anda terhubung ke internet');
@@ -73,11 +73,12 @@ class NetworkApiServices implements BaseApiServices {
   Future deleteJSONRequest(String endpoint) async {
     dynamic responseJson;
     try {
-      final response =
-          await http.delete(Uri.parse(AppConstant.baseUrl + endpoint), headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': "Bearer ${AppConstant.authentication}",
-      });
+      final response = await http.delete(
+          Uri.parse(AppConstant.baseUrl + endpoint),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Authorization': "Bearer ${AppConstant.authentication}",
+          });
       responseJson = returnResponse(response);
     } on SocketException {
       throw NoInternetException('Pastikan anda terhubung ke internet');
@@ -88,12 +89,14 @@ class NetworkApiServices implements BaseApiServices {
   }
 
   @override
-  Future<dynamic> postMultipartRequest(
-      String endpoint, Map<String, dynamic> payload, List<Map<String, dynamic>> files) async {
+  Future<dynamic> postMultipartRequest(String endpoint,
+      Map<String, dynamic> payload, List<Map<String, dynamic>> files) async {
     dynamic responseJson;
     try {
-      final request = http.MultipartRequest("POST", Uri.parse(AppConstant.baseUrl + endpoint));
-      request.headers.addAll({'Authorization': "Bearer ${AppConstant.authentication}"});
+      final request = http.MultipartRequest(
+          "POST", Uri.parse(AppConstant.baseUrl + endpoint));
+      request.headers
+          .addAll({'Authorization': "Bearer ${AppConstant.authentication}"});
       request.fields['payload'] = jsonEncode(payload);
       for (var fileData in files) {
         final file = await http.MultipartFile.fromPath(
@@ -110,8 +113,6 @@ class NetworkApiServices implements BaseApiServices {
       throw NoInternetException('Pastikan anda terhubung ke internet');
     } on TimeoutException {
       throw FetchDataException('Server tidak merespon');
-    } catch (e) {
-      throw FetchDataException('Terjadi kesalahan: $e');
     }
     return responseJson;
   }
@@ -131,7 +132,8 @@ class NetworkApiServices implements BaseApiServices {
         throw NotFoundException(responseJson['pesan']);
       case 500:
       default:
-        throw FetchDataException('Terjadi kesalahan saat berkomunikasi dengan server');
+        throw FetchDataException(
+            'Terjadi kesalahan saat berkomunikasi dengan server');
     }
   }
 }

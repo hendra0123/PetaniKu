@@ -1,4 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
 part of 'pages.dart';
 
 class LoginPage extends StatefulWidget {
@@ -45,14 +44,13 @@ class _LoginPageState extends State<LoginPage> {
       await requestPhoneCallPermission();
       final enteredPhoneNumber = _phoneController.text.trim();
 
-      if (simNumber == null) {
-        _showSnackBar('Nomor telepon SIM tidak tersedia.', Colors.red);
+      if (simNumber == null && mounted) {
+        WidgetUtil.showSnackBar(context, "Nomor telepon SIM tidak tersedia.", Colors.red);
         return;
       }
-      if (enteredPhoneNumber != simNumber && simNumber!.isNotEmpty) {
-        _showSnackBar(
-            'Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.',
-            Colors.red);
+      if (enteredPhoneNumber != simNumber && simNumber!.isNotEmpty && mounted) {
+        WidgetUtil.showSnackBar(context,
+            "Nomor tidak sesuai dengan nomor SIM. Harap periksa kembali nomor Anda.", Colors.red);
         return;
       }
       fetchLogin();
@@ -62,22 +60,16 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> fetchLogin() async {
     try {
       String message = await userViewModel.postLogin(_phoneController.text);
-      _showSnackBar(message, null);
-
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil("/dashboard", (route) => false);
+      if (mounted) {
+        WidgetUtil.showSnackBar(context, message, null);
+        Navigator.of(context).pushAndRemoveUntil(
+          WidgetUtil.getRoute(const MainNavigationPage()),
+          (route) => false,
+        );
+      }
     } catch (e) {
-      _showSnackBar(e.toString(), Colors.red);
+      if (mounted) WidgetUtil.showSnackBar(context, e.toString(), Colors.red);
     }
-  }
-
-  void _showSnackBar(String message, Color? color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-      ),
-    );
   }
 
   void _showPermissionDialog() {
@@ -198,9 +190,8 @@ class _LoginPageState extends State<LoginPage> {
             controller: _phoneController,
             decoration: _inputDecoration('Nomor Telepon'),
             keyboardType: TextInputType.number,
-            validator: (value) => value == null || value.isEmpty
-                ? 'Mohon masukkan nomor telepon anda'
-                : null,
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Mohon masukkan nomor telepon anda' : null,
           ),
           const SizedBox(height: 32),
           _buildButton(
@@ -228,8 +219,10 @@ class _LoginPageState extends State<LoginPage> {
             textColor: const Color(0xFF729762),
             borderColor: const Color(0xFF729762),
             onPressed: () {
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil("/signup", (route) => false);
+              Navigator.of(context).pushAndRemoveUntil(
+                WidgetUtil.getRoute(const SignUpPage()),
+                (route) => false,
+              );
             },
           ),
         ],
@@ -250,9 +243,7 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: backgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: borderColor != null
-              ? BorderSide(color: borderColor, width: 1.5)
-              : BorderSide.none,
+          side: borderColor != null ? BorderSide(color: borderColor, width: 1.5) : BorderSide.none,
         ),
       ),
       onPressed: onPressed,
@@ -284,18 +275,16 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildLoadingOverlay() {
-    return Consumer<UserViewModel>(
-      builder: (_, userViewModel, __) {
-        if (userViewModel.status == Status.loading) {
-          return Container(
-            color: Colors.black.withOpacity(0.5),
-            child: const Center(
-              child: CircularProgressIndicator(color: Color(0xFF729762)),
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      },
-    );
+    return Builder(builder: (_) {
+      if (userViewModel.status == Status.loading) {
+        return Container(
+          color: Colors.black.withOpacity(0.5),
+          child: const Center(
+            child: CircularProgressIndicator(color: Color(0xFF729762)),
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    });
   }
 }
