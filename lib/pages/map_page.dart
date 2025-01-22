@@ -186,7 +186,7 @@ class _MapPageState extends State<MapPage> {
               },
             ),
             children: [
-              AppConstant.openStreeMapTileLayer,
+              AppConstant.mapTilerSatelliteTileLayer,
               if (isMapping) ...buildPolylineLayers(),
               if (showPolygon && currentRiceField != null) buildPolygonLayer(),
               if (isMapping || currentRiceField == null) buildCurrentLocationLayer(),

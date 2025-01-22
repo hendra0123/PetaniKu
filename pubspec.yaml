@@ -58,6 +58,7 @@ dependencies:
   provider: ^6.1.2
   intl: ^0.20.1
   mime: ^2.0.0
+  percent_indicator: ^4.2.4
 
 dev_dependencies:
   flutter_test:

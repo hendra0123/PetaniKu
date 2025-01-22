@@ -135,27 +135,17 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  String determineRiceCondition(List<int> riceLevels, String plantingType) {
-    final averageLevel = riceLevels.reduce((val, e) => val + e) / riceLevels.length;
-
+  String determineRiceCondition(double percentage) {
     String riceCondition;
-    switch (averageLevel.round()) {
-      case 1:
-        riceCondition = "Padi anda sangat kekurangan nutrisi";
-      case 2:
-        riceCondition = "Padi anda kekurangan nutrisi";
-      case 3:
-        if (plantingType == "Direct Seeded") {
-          riceCondition = "Padi anda memiliki nutrisi yang cukup";
-        } else {
-          riceCondition = "Padi anda memiliki nutrisi yang optimal";
-        }
-      case 4:
-        riceCondition = "Padi anda memiliki nutrisi yang optimal";
-      default:
-        riceCondition = "Nutrisi padi tidak dapat diprediksi";
+    if (percentage <= 0.3) {
+      riceCondition = "Sangat buruk";
+    } else if (percentage > 0.3 && percentage <= 0.6) {
+      riceCondition = "Buruk";
+    } else if (percentage > 0.6 && percentage <= 0.8) {
+      riceCondition = "Baik";
+    } else {
+      riceCondition = "Optimal";
     }
-
     return riceCondition;
   }
 
@@ -172,25 +162,27 @@ class _DashboardPageState extends State<DashboardPage> {
         }
 
         if (userViewModel.status == Status.error) {
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildText(
-                text: 'Terjadi kesalahan saat proses pengambilan data',
-                fontWeight: FontWeight.bold,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              MainButton(
-                onPressed: () => userViewModel.getUserData(),
-                text: 'Coba Lagi',
-              ),
-            ],
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildText(
+                  text: 'Terjadi kesalahan saat proses pengambilan data',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                MainButton(
+                  onPressed: () => userViewModel.getUserData(),
+                  text: 'Coba Lagi',
+                ),
+              ],
+            ),
           );
         }
 
         return ListView(
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+          padding: const EdgeInsets.all(16),
           children: [
             buildMap(),
             const SizedBox(height: 16),
@@ -198,7 +190,6 @@ class _DashboardPageState extends State<DashboardPage> {
               _buildText(
                 text: "Lakukan Pemetaan Sawah untuk melihat sawah anda pada peta",
                 textAlign: TextAlign.center,
-                fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
               const SizedBox(height: 16),
@@ -211,14 +202,12 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(height: 32),
               _buildText(
                 text: "Pengecekan Terkini",
-                fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
               const SizedBox(height: 16),
               _buildText(
                 text: "Informasi pengecekan padi terkini akan ditampilkan di sini",
                 textAlign: TextAlign.center,
-                fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ],
@@ -253,7 +242,7 @@ class _DashboardPageState extends State<DashboardPage> {
               cameraConstraint: cameraConstraint,
             ),
             children: [
-              AppConstant.openStreeMapTileLayer,
+              AppConstant.mapTilerSatelliteTileLayer,
               if (userViewModel.isRiceFieldPolygonPresent) ...[
                 ...buildRiceLeaves(),
                 buildRiceField(),
@@ -315,10 +304,16 @@ class _DashboardPageState extends State<DashboardPage> {
       return const SizedBox.shrink();
     }
 
-    final riceLevels = userViewModel.riceLeaves!
-        .where((e) => e.level != null && e.level != 0)
-        .map((e) => e.level!)
-        .toList();
+    final riceLevels =
+        userViewModel.riceLeaves!.where((e) => e.level != null && e.level != 0).map((e) {
+      if ((userViewModel.plantingType ?? '') == "Direct Seeded" && e.level! == 3) {
+        return 4;
+      }
+      return e.level!;
+    }).toList();
+    final levelPercentage = riceLevels.reduce((val, e) => val + e) / (riceLevels.length * 4);
+
+    final currentStatistic = userViewModel.summary!.statistic!.last;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,35 +321,36 @@ class _DashboardPageState extends State<DashboardPage> {
         const SizedBox(height: 32),
         _buildText(
           text: "Pengecekan Terakhir",
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
+          fontSize: 24,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            InfoRectangleWidget(
+              percentage: levelPercentage,
+              header: "Nutrisi Padi",
+              footer: determineRiceCondition(levelPercentage),
+              backgroundColor: Colors.white,
+              borderColor: const Color(0xFF729762),
+            ),
+            InfoRectangleWidget(
+              percentage: currentStatistic.yield! / userViewModel.riceField!.maxYield!,
+              header: "Prediksi Panen",
+              footer: "${currentStatistic.yield!.ceil()} ton",
+              backgroundColor: Colors.white,
+              borderColor: const Color(0xFF729762),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         _buildText(
-          text: determineRiceCondition(riceLevels, userViewModel.plantingType ?? ''),
+          text: "Rekomendasi pupuk : ${currentStatistic.ureaRequired!.round()} kg",
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         _buildText(
-          text: "Prediksi hasil panen :",
+          text: "Tanggal : ${currentStatistic.createdTime!.formatToCustomString()}",
         ),
-        _buildText(
-          text: "${userViewModel.summary!.statistic![0].yield!.round()} ton",
-        ),
-        const SizedBox(height: 8),
-        _buildText(
-          text: "Rekomendasi jumlah pupuk :",
-        ),
-        _buildText(
-          text: '${userViewModel.summary!.statistic![0].ureaRequired!.round()} kg',
-        ),
-        const SizedBox(height: 8),
-        _buildText(
-          text: "Tanggal pengecekan terakhir :",
-        ),
-        _buildText(
-          text: userViewModel.summary!.statistic![0].createdTime!.formatToCustomString(),
-        ),
-        const SizedBox(height: 8),
       ],
     );
   }
@@ -382,17 +378,16 @@ class _DashboardPageState extends State<DashboardPage> {
         const SizedBox(height: 32),
         _buildText(
           text: "Tingkat Hasil Panen (Ton)",
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
+          fontSize: 24,
         ),
         CustomLineChart(
           mainData: yields,
           dataDates: createdTimes,
         ),
+        const SizedBox(height: 16),
         _buildText(
           text: "Penghematan Pupuk (Kg)",
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
+          fontSize: 24,
         ),
         CustomLineChart(
           mainData: ureas,
@@ -406,13 +401,12 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
         _buildText(
           text: "Jadwal Pengecekan Tanaman",
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
+          fontSize: 24,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
         const Alarm(),
       ],
     );
@@ -421,7 +415,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Text _buildText({
     required String text,
     TextAlign? textAlign,
-    FontWeight? fontWeight,
+    FontWeight fontWeight = FontWeight.bold,
     double fontSize = 18,
     Color? color,
   }) {

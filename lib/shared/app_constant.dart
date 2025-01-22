@@ -7,8 +7,7 @@ class AppConstant {
 
   static const String baseUrl = "https://b29q2kft-5000.asse.devtunnels.ms/";
 
-  static String authentication =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiUExXdmtoN1h4NW1ITFl2WEhPZFUiLCJleHAiOjE3MzcyMTM3MjEsImlhdCI6MTczNzEyNzMyMX0.gPTVRG2KN87bHWs2TBK2764eIMlEP5wHWleY9llA2pw";
+  static String authentication = "";
 
   static CameraDescription cameraDesc = const CameraDescription(
     name: 'default',

@@ -32,27 +32,17 @@ class _PredictionPageState extends State<PredictionPage> {
     }
   }
 
-  String determineRiceCondition(List<int> riceLevels, String plantingType) {
-    final averageLevel = riceLevels.reduce((val, e) => val + e) / riceLevels.length;
-
+  String determineRiceCondition(double percentage) {
     String riceCondition;
-    switch (averageLevel.round()) {
-      case 1:
-        riceCondition = "Padi anda sangat kekurangan nutrisi";
-      case 2:
-        riceCondition = "Padi anda kekurangan nutrisi";
-      case 3:
-        if (plantingType == "Direct Seeded") {
-          riceCondition = "Padi anda memiliki nutrisi yang cukup";
-        } else {
-          riceCondition = "Padi anda memiliki nutrisi yang optimal";
-        }
-      case 4:
-        riceCondition = "Padi anda memiliki nutrisi yang optimal";
-      default:
-        riceCondition = "Nutrisi padi tidak dapat diprediksi";
+    if (percentage <= 0.3) {
+      riceCondition = "Sangat buruk";
+    } else if (percentage > 0.3 && percentage <= 0.6) {
+      riceCondition = "Buruk";
+    } else if (percentage > 0.6 && percentage <= 0.8) {
+      riceCondition = "Baik";
+    } else {
+      riceCondition = "Optimal";
     }
-
     return riceCondition;
   }
 
@@ -73,10 +63,9 @@ class _PredictionPageState extends State<PredictionPage> {
         title: const Text("Data Pengecekan"),
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+        padding: const EdgeInsets.all(16),
         children: [
           buildMap(),
-          const SizedBox(height: 16),
           buildCurrentCondition(),
         ],
       ),
@@ -98,7 +87,7 @@ class _PredictionPageState extends State<PredictionPage> {
           cameraConstraint: cameraConstraint,
         ),
         children: [
-          AppConstant.openStreeMapTileLayer,
+          AppConstant.mapTilerSatelliteTileLayer,
           ...buildRiceLeaves(),
           buildRiceField(),
         ],
@@ -152,72 +141,72 @@ class _PredictionPageState extends State<PredictionPage> {
 
   Widget buildCurrentCondition() {
     final riceLevels =
-        predictionData.riceLeaves!.where((e) => e.level != 0).map((e) => e.level!).toList();
+        predictionData.riceLeaves!.where((e) => e.level != null && e.level != 0).map((e) {
+      if ((predictionData.plantingType ?? '') == "Direct Seeded" && e.level! == 3) {
+        return 4;
+      }
+      return e.level!;
+    }).toList();
+    final levelPercentage = riceLevels.reduce((val, e) => val + e) / (riceLevels.length * 4);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 32),
         _buildText(
           text: "Hasil Pengecekan",
           fontWeight: FontWeight.bold,
-          fontSize: 20,
+          fontSize: 24,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            InfoRectangleWidget(
+              percentage: levelPercentage,
+              header: "Nutrisi Padi",
+              footer: determineRiceCondition(levelPercentage),
+              backgroundColor: Colors.white,
+              borderColor: const Color(0xFF729762),
+            ),
+            InfoRectangleWidget(
+              percentage: predictionData.yield! / predictionData.riceField!.maxYield!,
+              header: "Prediksi Panen",
+              footer: "${predictionData.yield!.ceil()} ton",
+              backgroundColor: Colors.white,
+              borderColor: const Color(0xFF729762),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         _buildText(
-          text: determineRiceCondition(riceLevels, predictionData.plantingType!),
-        ),
-        const SizedBox(height: 8),
-        _buildText(
-          text: "Prediksi hasil panen :",
-        ),
-        _buildText(
-          text: "${predictionData.yield!.round()} ton",
-        ),
-        const SizedBox(height: 8),
-        _buildText(
-          text: "Rekomendasi jumlah pupuk :",
-        ),
-        _buildText(
-          text: "${predictionData.ureaRequired!.round()} kg",
-        ),
-        const SizedBox(height: 8),
-        _buildText(
-          text: "Tanggal pengecekan :",
-        ),
-        _buildText(
-          text: predictionData.createdTime!.formatToCustomString(),
+          text: "Rekomendasi pupuk : ${predictionData.ureaRequired!.round()} kg",
         ),
         const SizedBox(height: 16),
+        _buildText(
+          text: "Tanggal : ${predictionData.createdTime!.formatToCustomString()}",
+        ),
+        const SizedBox(height: 32),
         _buildText(
           text: "Informasi Tanaman",
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
+          fontSize: 24,
         ),
         const SizedBox(height: 16),
         _buildText(
-          text: "Umur padi :",
-        ),
-        _buildText(
-          text: "${predictionData.paddyAge} minggu",
-        ),
-        const SizedBox(height: 8),
-        _buildText(
-          text: "Musim saat pengecekan :",
-        ),
-        _buildText(
-          text: '${predictionData.season}',
-        ),
-        const SizedBox(height: 8),
-        _buildText(
-          text: "Cara penanaman :",
-        ),
-        _buildText(
-          text: '${predictionData.plantingType}',
+          text: "Umur padi : ${predictionData.paddyAge} minggu",
         ),
         const SizedBox(height: 16),
+        _buildText(
+          text: "Musim : ${predictionData.season == "Wet" ? "Hujan" : "Kemarau"}",
+        ),
+        const SizedBox(height: 16),
+        _buildText(
+          text:
+              "Cara penanaman : ${predictionData.plantingType == "Direct Seeded" ? "Tabela" : "Semai"}",
+        ),
+        const SizedBox(height: 32),
         _buildText(
           text: "Foto Daun",
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
+          fontSize: 24,
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -248,7 +237,7 @@ class _PredictionPageState extends State<PredictionPage> {
   Text _buildText({
     required String text,
     TextAlign? textAlign,
-    FontWeight? fontWeight,
+    FontWeight fontWeight = FontWeight.bold,
     double fontSize = 18,
     Color? color,
   }) {

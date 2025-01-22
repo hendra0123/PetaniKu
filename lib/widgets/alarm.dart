@@ -10,15 +10,7 @@ class Alarm extends StatefulWidget {
 class _AlarmState extends State<Alarm> {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  final List<String> days = [
-    'Senin',
-    'Selasa',
-    'Rabu',
-    'Kamis',
-    'Jumat',
-    'Sabtu',
-    'Minggu'
-  ];
+  final List<String> days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
   List<String> selectedDays = [];
   List<DateTime> targetDates = [];
   int selectedHour = 9;
@@ -104,15 +96,13 @@ class _AlarmState extends State<Alarm> {
                           ),
                           Text(
                             tempSelectedHour.toString().padLeft(2, '0'),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 24),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                           ),
                           IconButton(
                             icon: const Icon(Icons.arrow_drop_down, size: 30),
                             onPressed: () {
                               setDialogState(() {
-                                tempSelectedHour =
-                                    (tempSelectedHour - 1 + 24) % 24;
+                                tempSelectedHour = (tempSelectedHour - 1 + 24) % 24;
                               });
                             },
                           ),
@@ -121,8 +111,7 @@ class _AlarmState extends State<Alarm> {
                       const SizedBox(width: 10),
                       const Text(
                         ':',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 24),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -131,22 +120,19 @@ class _AlarmState extends State<Alarm> {
                             icon: const Icon(Icons.arrow_drop_up, size: 30),
                             onPressed: () {
                               setDialogState(() {
-                                tempSelectedMinute =
-                                    (tempSelectedMinute + 1) % 60;
+                                tempSelectedMinute = (tempSelectedMinute + 1) % 60;
                               });
                             },
                           ),
                           Text(
                             tempSelectedMinute.toString().padLeft(2, '0'),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 24),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                           ),
                           IconButton(
                             icon: const Icon(Icons.arrow_drop_down, size: 30),
                             onPressed: () {
                               setDialogState(() {
-                                tempSelectedMinute =
-                                    (tempSelectedMinute - 1 + 60) % 60;
+                                tempSelectedMinute = (tempSelectedMinute - 1 + 60) % 60;
                               });
                             },
                           ),
@@ -175,10 +161,14 @@ class _AlarmState extends State<Alarm> {
                         isAlarmEnabled = false;
                       }
                     });
+
                     if (isAlarmEnabled) {
                       await scheduleNotification();
                     }
-                    Navigator.pop(context);
+
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
                   },
                   child: const Text('Simpan'),
                 ),
@@ -202,8 +192,7 @@ class _AlarmState extends State<Alarm> {
       return;
     }
 
-    const AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails(
+    const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
       'alarm_channel_id',
       'Alarm Notifications',
       channelDescription: 'Notifikasi alarm untuk jadwal pengecekan tanaman',
@@ -227,38 +216,31 @@ class _AlarmState extends State<Alarm> {
 
       if (weekday == now.weekday) {
         // Hari yang sama dengan hari ini
-        if (selectedHour > now.hour ||
-            (selectedHour == now.hour && selectedMinute > now.minute)) {
+        if (selectedHour > now.hour || (selectedHour == now.hour && selectedMinute > now.minute)) {
           // Jika waktu belum lewat
-          targetDate = DateTime(
-              now.year, now.month, now.day, selectedHour, selectedMinute);
+          targetDate = DateTime(now.year, now.month, now.day, selectedHour, selectedMinute);
         } else {
           // Jika waktu sudah lewat, pindahkan ke minggu depan
           targetDate = now.add(const Duration(days: 7));
-          targetDate = DateTime(
-              targetDate.year,
-              targetDate.month,
-              targetDate.day - targetDate.weekday + weekday,
-              selectedHour,
-              selectedMinute);
+          targetDate = DateTime(targetDate.year, targetDate.month,
+              targetDate.day - targetDate.weekday + weekday, selectedHour, selectedMinute);
         }
       } else if (weekday > now.weekday) {
         // Hari di minggu ini
         int daysUntil = weekday - now.weekday;
         targetDate = now.add(Duration(days: daysUntil));
-        targetDate = DateTime(targetDate.year, targetDate.month, targetDate.day,
-            selectedHour, selectedMinute);
+        targetDate = DateTime(
+            targetDate.year, targetDate.month, targetDate.day, selectedHour, selectedMinute);
       } else {
         // Hari di minggu depan
         int daysUntilNextWeek = 7 - (now.weekday - weekday);
         targetDate = now.add(Duration(days: daysUntilNextWeek));
-        targetDate = DateTime(targetDate.year, targetDate.month, targetDate.day,
-            selectedHour, selectedMinute);
+        targetDate = DateTime(
+            targetDate.year, targetDate.month, targetDate.day, selectedHour, selectedMinute);
       }
 
       // Konversi ke TZDateTime
-      final tz.TZDateTime tzTargetDate =
-          tz.TZDateTime.from(targetDate, tz.local);
+      final tz.TZDateTime tzTargetDate = tz.TZDateTime.from(targetDate, tz.local);
 
       targetDates.add(tzTargetDate);
 
@@ -270,8 +252,7 @@ class _AlarmState extends State<Alarm> {
         tzTargetDate,
         notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       );
     }
@@ -282,7 +263,6 @@ class _AlarmState extends State<Alarm> {
     if (status.isDenied || status.isRestricted) {
       await Permission.notification.request();
     }
-    print('Notification Permission: ${status.isGranted}');
 
     if (status.isPermanentlyDenied) {
       _showPermissionDialog();
@@ -340,8 +320,7 @@ class _AlarmState extends State<Alarm> {
     List<String> sortedDays = List.from(selectedDays);
     sortedDays.sort((a, b) => days.indexOf(a).compareTo(days.indexOf(b)));
     return GestureDetector(
-      onTap:
-          showAlarmSettingsDialog, // Klik seluruh widget untuk mengatur waktu
+      onTap: showAlarmSettingsDialog, // Klik seluruh widget untuk mengatur waktu
       child: Container(
         margin: const EdgeInsets.all(8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -374,9 +353,7 @@ class _AlarmState extends State<Alarm> {
                   ),
                 ),
                 Text(
-                  sortedDays.isEmpty
-                      ? 'Tekan untuk memilih hari'
-                      : sortedDays.join(', '),
+                  sortedDays.isEmpty ? 'Tekan untuk memilih hari' : sortedDays.join(', '),
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
@@ -395,8 +372,7 @@ class _AlarmState extends State<Alarm> {
                 if (selectedDays.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text(
-                          'Pilih minimal satu hari untuk mengaktifkan alarm.'),
+                      content: Text('Pilih minimal satu hari untuk mengaktifkan alarm.'),
                       backgroundColor: Colors.red,
                     ),
                   );

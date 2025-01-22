@@ -323,7 +323,7 @@ class _CameraPageState extends State<CameraPage> {
               minZoom: initialZoom - 1,
             ),
             children: [
-              AppConstant.openStreeMapTileLayer,
+              AppConstant.mapTilerSatelliteTileLayer,
               if (userViewModel.isRiceFieldPolygonPresent) buildRiceField(),
               buildCurrentLocationLayer(),
             ],
