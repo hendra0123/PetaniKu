@@ -13,8 +13,22 @@ class InfoRectangleWidget extends StatelessWidget {
     required this.header,
     required this.footer,
     this.backgroundColor = Colors.white,
-    this.borderColor = Colors.grey,
+    this.borderColor = const Color(0xFF729762),
   });
+
+  Color determineCircularColor(double percentage) {
+    Color circularColor;
+    if (percentage <= 0.3) {
+      circularColor = const Color(0xFFEB2F00);
+    } else if (percentage > 0.3 && percentage <= 0.6) {
+      circularColor = const Color(0xFFEBA000);
+    } else if (percentage > 0.6 && percentage <= 0.8) {
+      circularColor = const Color(0xFFa7cd95);
+    } else {
+      circularColor = const Color(0xFF729762);
+    }
+    return circularColor;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +53,12 @@ class InfoRectangleWidget extends StatelessWidget {
               child: Text(
                 header,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ),
             center: Text(
               '${(percentage * 100).ceil()}%',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             footer: Padding(
               padding: const EdgeInsets.only(top: 16),
@@ -55,7 +69,7 @@ class InfoRectangleWidget extends StatelessWidget {
               ),
             ),
             circularStrokeCap: CircularStrokeCap.round,
-            progressColor: const Color(0xFF729762),
+            progressColor: determineCircularColor(percentage),
           ),
           const SizedBox(height: 8),
         ],

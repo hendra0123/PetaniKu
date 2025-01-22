@@ -122,13 +122,13 @@ class _DashboardPageState extends State<DashboardPage> {
   Color determineColorLevel(int level) {
     switch (level) {
       case 1:
-        return const Color(0xFFEB5600);
+        return const Color(0xFFEB2F00);
       case 2:
         return const Color(0xFFEBA000);
       case 3:
-        return const Color(0xFF729762);
+        return const Color(0xFFa7cd95);
       case 4:
-        return const Color(0xFF288500);
+        return const Color(0xFF729762);
       case 0:
       default:
         return const Color(0xFF797979);
@@ -331,15 +331,11 @@ class _DashboardPageState extends State<DashboardPage> {
               percentage: levelPercentage,
               header: "Nutrisi Padi",
               footer: determineRiceCondition(levelPercentage),
-              backgroundColor: Colors.white,
-              borderColor: const Color(0xFF729762),
             ),
             InfoRectangleWidget(
               percentage: currentStatistic.yield! / userViewModel.riceField!.maxYield!,
               header: "Prediksi Panen",
               footer: "${currentStatistic.yield!.ceil()} ton",
-              backgroundColor: Colors.white,
-              borderColor: const Color(0xFF729762),
             ),
           ],
         ),
@@ -378,7 +374,7 @@ class _DashboardPageState extends State<DashboardPage> {
         const SizedBox(height: 32),
         _buildText(
           text: "Tingkat Hasil Panen (Ton)",
-          fontSize: 24,
+          fontSize: 20,
         ),
         CustomLineChart(
           mainData: yields,
@@ -387,7 +383,7 @@ class _DashboardPageState extends State<DashboardPage> {
         const SizedBox(height: 16),
         _buildText(
           text: "Penghematan Pupuk (Kg)",
-          fontSize: 24,
+          fontSize: 20,
         ),
         CustomLineChart(
           mainData: ureas,
@@ -404,7 +400,7 @@ class _DashboardPageState extends State<DashboardPage> {
         const SizedBox(height: 16),
         _buildText(
           text: "Jadwal Pengecekan Tanaman",
-          fontSize: 24,
+          fontSize: 20,
         ),
         const SizedBox(height: 16),
         const Alarm(),

@@ -137,6 +137,7 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   void dispose() {
+    _followCurrentLocationStreamController.close();
     _cameraController.dispose();
     super.dispose();
   }
