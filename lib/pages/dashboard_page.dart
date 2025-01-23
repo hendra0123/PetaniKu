@@ -201,19 +201,25 @@ class _DashboardPageState extends State<DashboardPage> {
             if (userViewModel.riceLeaves == null || userViewModel.riceLeaves!.isEmpty) ...[
               const SizedBox(height: 32),
               _buildText(
-                text: "Pengecekan Terkini",
+                text: "Pengecekan Terakhir",
                 fontSize: 20,
               ),
               const SizedBox(height: 16),
-              _buildText(
-                text: "Informasi pengecekan padi terkini akan ditampilkan di sini",
-                textAlign: TextAlign.center,
-                fontSize: 16,
-              ),
+              SizedBox(
+                width: double.infinity,
+                height: 120,
+                child: Center(
+                  child: _buildText(
+                    text: "Anda belum melakukan pengecekan",
+                    textAlign: TextAlign.center,
+                    fontSize: 16,
+                  ),
+                ),
+              )
             ],
             if (userViewModel.summary != null) buildCurrentCondition(),
             if (userViewModel.summary != null) buildStatistic(),
-            buildAlarm(),
+            if (userViewModel.riceField != null) buildAlarm(),
           ],
         );
       }),
@@ -242,7 +248,7 @@ class _DashboardPageState extends State<DashboardPage> {
               cameraConstraint: cameraConstraint,
             ),
             children: [
-              AppConstant.mapTilerSatelliteTileLayer,
+              AppConstant.openStreeMapTileLayer,
               if (userViewModel.isRiceFieldPolygonPresent) ...[
                 ...buildRiceLeaves(),
                 buildRiceField(),

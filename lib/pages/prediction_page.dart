@@ -87,7 +87,7 @@ class _PredictionPageState extends State<PredictionPage> {
           cameraConstraint: cameraConstraint,
         ),
         children: [
-          AppConstant.mapTilerSatelliteTileLayer,
+          AppConstant.openStreeMapTileLayer,
           ...buildRiceLeaves(),
           buildRiceField(),
         ],

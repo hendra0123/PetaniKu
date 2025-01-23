@@ -186,7 +186,7 @@ class _MapPageState extends State<MapPage> {
               },
             ),
             children: [
-              AppConstant.mapTilerSatelliteTileLayer,
+              AppConstant.openStreeMapTileLayer,
               if (isMapping) ...buildPolylineLayers(),
               if (showPolygon && currentRiceField != null) buildPolygonLayer(),
               if (isMapping || currentRiceField == null) buildCurrentLocationLayer(),
@@ -302,7 +302,7 @@ class _MapPageState extends State<MapPage> {
             : polygonErrorMsg.isNotEmpty
                 ? "Ulangi"
                 : currentRiceField != userViewModel.riceField
-                    ? "Konfirmasi"
+                    ? "Simpan"
                     : "Mulai Pemetaan Sawah",
       ),
     ]);

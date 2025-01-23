@@ -81,7 +81,10 @@ class _CameraPageState extends State<CameraPage> {
         });
       }
     } catch (e) {
-      if (mounted) WidgetUtil.showSnackBar(context, e.toString(), Colors.red);
+      if (mounted) {
+        WidgetUtil.showSnackBar(context, e.toString(), Colors.red);
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -112,7 +115,7 @@ class _CameraPageState extends State<CameraPage> {
         _isInCameraMode = true;
       });
       widget.backToDashboard();
-      Navigator.of(context).push(WidgetUtil.getRoute(const MapPage()));
+      Navigator.of(context).push(WidgetUtil.getRoute(PredictionPage(prediction: result)));
     }
   }
 
@@ -324,7 +327,7 @@ class _CameraPageState extends State<CameraPage> {
               minZoom: initialZoom - 1,
             ),
             children: [
-              AppConstant.mapTilerSatelliteTileLayer,
+              AppConstant.openStreeMapTileLayer,
               if (userViewModel.isRiceFieldPolygonPresent) buildRiceField(),
               buildCurrentLocationLayer(),
             ],

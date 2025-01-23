@@ -23,6 +23,13 @@ class _CustomLineChartState extends State<CustomLineChart> {
     List<double> mainData = widget.mainData;
     List<DateTime> dataDates = widget.dataDates;
 
+    if (mainData.length == 1) {
+      mainData.insert(0, 0);
+    }
+    if (dataDates.length == 1) {
+      dataDates.insert(0, dataDates.first.subtract(const Duration(days: 1)));
+    }
+
     // Y-axis labels
     maxY = _closestMultipleOf5(mainData.reduce((a, b) => a > b ? a : b));
     yLabels = [
